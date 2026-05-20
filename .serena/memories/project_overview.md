@@ -1,0 +1,1 @@
+Project `docker-tahak` is a single-file static HTML cheat sheet for Docker Compose in Czech. The main artifact is `docker-compose-tahak.html`, which contains markup, inline CSS, and a small inline script for tab switching. There is no detected build system, package manifest, test suite, or lint configuration in the repo root.

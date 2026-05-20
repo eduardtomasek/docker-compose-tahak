@@ -1,0 +1,1 @@
+When finishing work in this project: summarize changes, mention risks or unverified parts, and explicitly note that there are currently no detected test/lint/typecheck commands unless such tooling is added later. For UI changes, manually verify both desktop and mobile behavior because the page is a static single-file HTML app.

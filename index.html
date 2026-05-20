@@ -1,0 +1,2773 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Docker Compose — Tahák</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --bg2: #161b22;
+    --bg3: #1c2128;
+    --bg4: #21262d;
+    --border: #30363d;
+    --border2: #444c56;
+    --text: #e6edf3;
+    --text2: #8b949e;
+    --text3: #6e7681;
+    --blue: #58a6ff;
+    --blue-bg: #0d1b2e;
+    --green: #3fb950;
+    --green-bg: #0d2119;
+    --amber: #d29922;
+    --amber-bg: #2a1f0a;
+    --red: #f85149;
+    --teal: #39d353;
+    --mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    height: 52px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 15px;
+    white-space: nowrap;
+    color: var(--text);
+    text-decoration: none;
+  }
+  .logo svg { color: var(--blue); }
+  nav { display: flex; gap: 2px; overflow-x: auto; flex: 1; }
+  nav::-webkit-scrollbar { height: 0; }
+  .nav-btn {
+    background: none;
+    border: none;
+    color: var(--text2);
+    font-family: var(--sans);
+    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .nav-btn:hover { background: var(--bg4); color: var(--text); }
+  .nav-btn.active { background: var(--blue-bg); color: var(--blue); }
+
+  /* LAYOUT */
+  main { max-width: 1280px; margin: 0 auto; padding: 2rem; }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text3);
+    margin-bottom: 1.25rem;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
+  .grid.wide { grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); }
+  .col-full { grid-column: 1 / -1; }
+
+  /* CARDS */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .card-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 14px;
+    font-family: var(--sans);
+  }
+
+  /* ENTRIES */
+  .entry { margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .entry:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+  .key {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--blue);
+  }
+  .desc {
+    font-size: 12.5px;
+    color: var(--text2);
+    margin: 3px 0 7px;
+    line-height: 1.5;
+  }
+  pre.code {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    overflow-x: auto;
+    line-height: 1.7;
+    tab-size: 2;
+  }
+
+  /* SYNTAX HIGHLIGHT in pre.code */
+  .ck { color: #79c0ff; }  /* key */
+  .cv { color: #a5d6ff; }  /* value / string */
+  .cn { color: #ff7b72; }  /* number / special */
+  .cc { color: var(--text3); font-style: italic; }  /* comment */
+
+  /* BADGES */
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-left: 8px;
+    font-family: var(--sans);
+    vertical-align: middle;
+  }
+  .badge-dep { background: var(--amber-bg); color: var(--amber); border: 1px solid #5a3a00; }
+  .badge-new { background: var(--green-bg); color: var(--green); border: 1px solid #0d4a1a; }
+
+  /* TIP */
+  .tip {
+    background: var(--blue-bg);
+    border: 1px solid #1a3a5c;
+    border-left: 3px solid var(--blue);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--text);
+    margin-bottom: 16px;
+    line-height: 1.6;
+  }
+  .tip strong { color: var(--blue); }
+  .tip code { font-family: var(--mono); font-size: 12px; color: var(--blue); background: rgba(88,166,255,0.1); padding: 1px 5px; border-radius: 4px; }
+
+  /* CLI TABLE */
+  .cmd-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .cmd-table tr:not(:last-child) td { border-bottom: 1px solid var(--border); }
+  .cmd-table td { padding: 8px 10px; }
+  .cmd-table td:first-child {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--blue);
+    white-space: nowrap;
+    padding-right: 20px;
+    width: 1%;
+  }
+  .cmd-table td:last-child { color: var(--text2); }
+  .cmd-group {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding: 12px 10px 4px;
+    display: block;
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  @media (max-width: 700px) {
+    header { padding: 0 1rem; gap: 1rem; }
+    main { padding: 1.25rem 1rem; }
+    .grid, .grid.wide { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="#">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+      <rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 17h7M17 14v7"/>
+    </svg>
+    Docker Compose — Tahák
+  </a>
+  <nav id="nav">
+    <button class="nav-btn active" data-tab="structure">Struktura</button>
+    <button class="nav-btn" data-tab="services">services</button>
+    <button class="nav-btn" data-tab="network">networks</button>
+    <button class="nav-btn" data-tab="volumes">volumes</button>
+    <button class="nav-btn" data-tab="build">build</button>
+    <button class="nav-btn" data-tab="deploy">deploy</button>
+    <button class="nav-btn" data-tab="cli">CLI příkazy</button>
+    <button class="nav-btn" data-tab="dockerfile">Dockerfile</button>
+    <button class="nav-btn" data-tab="image">Docker image</button>
+    <button class="nav-btn" data-tab="container">Container</button>
+    <button class="nav-btn" data-tab="storage">Storage</button>
+    <button class="nav-btn" data-tab="networking">Networking</button>
+    <button class="nav-btn" data-tab="buildkit">BuildKit</button>
+    <button class="nav-btn" data-tab="registry">Registry</button>
+    <button class="nav-btn" data-tab="troubleshooting">Troubleshooting</button>
+    <button class="nav-btn" data-tab="security">Security</button>
+    <button class="nav-btn" data-tab="example">Příklad</button>
+  </nav>
+</header>
+
+<main>
+
+<!-- ==================== STRUKTURA ==================== -->
+<div class="section active" id="tab-structure">
+<div class="section-title">Základní struktura souboru</div>
+<div class="tip">
+  <strong>Compose V2:</strong> Klíč <code>version</code> je dnes volitelný — Compose V2 ho ignoruje. Pokud potřebuješ zpětnou kompatibilitu, použij <code>version: "3.9"</code>. Soubor se může jmenovat <code>compose.yml</code> nebo <code>docker-compose.yml</code>.
+</div>
+<div class="grid">
+  <div class="card col-full">
+    <div class="card-label">Kompletní kostra</div>
+    <pre class="code"><span class="cc"># Verze je volitelná v Compose V2</span>
+<span class="ck">version</span>: <span class="cv">"3.9"</span>
+
+<span class="ck">services</span>:               <span class="cc"># definice kontejnerů (povinné)</span>
+  <span class="ck">web</span>:
+    <span class="ck">image</span>: <span class="cv">nginx:alpine</span>
+  <span class="ck">db</span>:
+    <span class="ck">image</span>: <span class="cv">postgres:16</span>
+
+<span class="ck">networks</span>:               <span class="cc"># volitelné – vlastní sítě</span>
+  <span class="ck">frontend</span>:
+  <span class="ck">backend</span>:
+
+<span class="ck">volumes</span>:                <span class="cc"># volitelné – pojmenované svazky</span>
+  <span class="ck">pgdata</span>:
+
+<span class="ck">configs</span>:                <span class="cc"># volitelné – konfigurační soubory</span>
+  <span class="ck">nginx_conf</span>:
+    <span class="ck">file</span>: <span class="cv">./nginx.conf</span>
+
+<span class="ck">secrets</span>:                <span class="cc"># volitelné – tajné hodnoty</span>
+  <span class="ck">db_password</span>:
+    <span class="ck">file</span>: <span class="cv">./secret.txt</span></pre>
+  </div>
+  <div class="card">
+    <div class="card-label">Top-level klíče</div>
+    <div class="entry">
+      <div class="key">services</div>
+      <div class="desc">Definice jednotlivých kontejnerů — hlavní a povinná sekce</div>
+    </div>
+    <div class="entry">
+      <div class="key">networks</div>
+      <div class="desc">Vlastní sítě sdílené mezi službami</div>
+    </div>
+    <div class="entry">
+      <div class="key">volumes</div>
+      <div class="desc">Pojmenované svazky pro perzistentní data</div>
+    </div>
+    <div class="entry">
+      <div class="key">configs</div>
+      <div class="desc">Konfigurační soubory (Compose Spec / Swarm)</div>
+    </div>
+    <div class="entry">
+      <div class="key">secrets</div>
+      <div class="desc">Tajné hodnoty — hesla, tokeny, certifikáty</div>
+    </div>
+    <div class="entry">
+      <div class="key">include</div>
+      <div class="desc">Vložení jiných Compose souborů (Compose V2.20+)</div>
+      <pre class="code"><span class="ck">include</span>:
+  - <span class="cv">./infra/compose.yml</span>
+  - <span class="cv">./services/compose.yml</span></pre>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-label">Proměnné prostředí a .env</div>
+    <div class="entry">
+      <div class="key">${VAR}</div>
+      <div class="desc">Nahrazeno z prostředí shellu nebo .env souboru</div>
+    </div>
+    <div class="entry">
+      <div class="key">${VAR:-default}</div>
+      <div class="desc">Výchozí hodnota pokud VAR není nastavena</div>
+    </div>
+    <div class="entry">
+      <div class="key">${VAR:?chyba}</div>
+      <div class="desc">Ukončí s chybou pokud VAR není nastavena</div>
+    </div>
+    <div class="entry">
+      <div class="key">.env soubor</div>
+      <div class="desc">Automaticky načten ze stejného adresáře jako compose.yml</div>
+      <pre class="code"><span class="cc"># .env</span>
+<span class="ck">POSTGRES_DB</span>=<span class="cv">mydb</span>
+<span class="ck">POSTGRES_USER</span>=<span class="cv">admin</span>
+<span class="ck">NODE_ENV</span>=<span class="cv">production</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">env_file:</div>
+      <div class="desc">Explicitní seznam .env souborů pro danou službu</div>
+      <pre class="code"><span class="ck">env_file</span>:
+  - <span class="cv">.env</span>
+  - <span class="cv">.env.production</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">x-rozšíření (YAML anchors)</div>
+      <div class="desc">Znovupoužitelné bloky pomocí YAML kotev</div>
+      <pre class="code"><span class="ck">x-common</span>: <span class="cv">&amp;common</span>
+  <span class="ck">restart</span>: <span class="cv">unless-stopped</span>
+  <span class="ck">env_file</span>: [<span class="cv">.env</span>]
+
+<span class="ck">services</span>:
+  <span class="ck">web</span>:
+    <span class="cv">&lt;&lt;</span>: <span class="cv">*common</span>
+    <span class="ck">image</span>: <span class="cv">nginx</span></pre>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ==================== SERVICES ==================== -->
+<div class="section" id="tab-services">
+<div class="section-title">services — volby kontejneru</div>
+<div class="grid">
+
+  <div class="card">
+    <div class="card-label">Obraz a identita</div>
+    <div class="entry">
+      <div class="key">image:</div>
+      <div class="desc">Název Docker obrazu z registru nebo lokální</div>
+      <pre class="code"><span class="ck">image</span>: <span class="cv">nginx:1.25-alpine</span>
+<span class="ck">image</span>: <span class="cv">postgres:16</span>
+<span class="ck">image</span>: <span class="cv">myregistry.io/myapp:latest</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">container_name:</div>
+      <div class="desc">Vlastní název kontejneru (musí být unikátní — neumožňuje scale)</div>
+      <pre class="code"><span class="ck">container_name</span>: <span class="cv">my-nginx</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">hostname:</div>
+      <div class="desc">Hostname uvnitř kontejneru (výchozí = název služby)</div>
+    </div>
+    <div class="entry">
+      <div class="key">domainname:</div>
+      <div class="desc">Doménové jméno kontejneru</div>
+    </div>
+    <div class="entry">
+      <div class="key">pull_policy:</div>
+      <div class="desc">Kdy stáhnout obraz z registru</div>
+      <pre class="code"><span class="ck">pull_policy</span>: <span class="cv">always</span>   <span class="cc"># vždy</span>
+<span class="ck">pull_policy</span>: <span class="cv">missing</span>  <span class="cc"># jen pokud chybí (výchozí)</span>
+<span class="ck">pull_policy</span>: <span class="cv">never</span>    <span class="cc"># nikdy nestahovat</span>
+<span class="ck">pull_policy</span>: <span class="cv">build</span>    <span class="cc"># vždy buildovat</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">platform:</div>
+      <div class="desc">Cílová platforma obrazu</div>
+      <pre class="code"><span class="ck">platform</span>: <span class="cv">linux/amd64</span>
+<span class="ck">platform</span>: <span class="cv">linux/arm64</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Porty</div>
+    <div class="entry">
+      <div class="key">ports:</div>
+      <div class="desc">Mapování portů HOST:CONTAINER (zkrácená i dlouhá syntaxe)</div>
+      <pre class="code"><span class="ck">ports</span>:
+  - <span class="cv">"8080:80"</span>           <span class="cc"># host:container</span>
+  - <span class="cv">"443:443"</span>
+  - <span class="cv">"127.0.0.1:3000:3000"</span> <span class="cc"># vázat na IP</span>
+  - <span class="cv">"3000"</span>              <span class="cc"># náhodný host port</span>
+  - <span class="ck">target</span>: <span class="cn">80</span>
+    <span class="ck">published</span>: <span class="cv">"8080"</span>
+    <span class="ck">protocol</span>: <span class="cv">tcp</span>
+    <span class="ck">mode</span>: <span class="cv">host</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">expose:</div>
+      <div class="desc">Zpřístupní port pouze jiným službám, ne hostu</div>
+      <pre class="code"><span class="ck">expose</span>:
+  - <span class="cv">"3000"</span>
+  - <span class="cv">"8080"</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Sítě</div>
+    <div class="entry">
+      <div class="key">networks:</div>
+      <div class="desc">Sítě ke kterým je služba připojena</div>
+      <pre class="code"><span class="cc"># Zkrácená syntaxe</span>
+<span class="ck">networks</span>:
+  - <span class="cv">frontend</span>
+  - <span class="cv">backend</span>
+
+<span class="cc"># Rozšířená syntaxe</span>
+<span class="ck">networks</span>:
+  <span class="ck">backend</span>:
+    <span class="ck">aliases</span>:
+      - <span class="cv">database</span>
+    <span class="ck">ipv4_address</span>: <span class="cv">172.20.0.10</span>
+    <span class="ck">priority</span>: <span class="cn">100</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">network_mode:</div>
+      <div class="desc">Síťový mód kontejneru (alternativa k networks:)</div>
+      <pre class="code"><span class="ck">network_mode</span>: <span class="cv">host</span>
+<span class="ck">network_mode</span>: <span class="cv">none</span>
+<span class="ck">network_mode</span>: <span class="cv">"service:db"</span>
+<span class="ck">network_mode</span>: <span class="cv">"container:my-nginx"</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">extra_hosts:</div>
+      <div class="desc">Přidat záznamy do /etc/hosts</div>
+      <pre class="code"><span class="ck">extra_hosts</span>:
+  - <span class="cv">"myhost:192.168.1.10"</span>
+  - <span class="cv">"gateway:host-gateway"</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">dns: / dns_search:</div>
+      <div class="desc">Vlastní DNS servery a search domény</div>
+      <pre class="code"><span class="ck">dns</span>:
+  - <span class="cv">8.8.8.8</span>
+  - <span class="cv">1.1.1.1</span>
+<span class="ck">dns_search</span>:
+  - <span class="cv">example.com</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Proměnné prostředí</div>
+    <div class="entry">
+      <div class="key">environment:</div>
+      <div class="desc">Inline proměnné (seznam nebo mapa)</div>
+      <pre class="code"><span class="cc"># Seznam</span>
+<span class="ck">environment</span>:
+  - <span class="cv">NODE_ENV=production</span>
+  - <span class="cv">DB_HOST=db</span>
+  - <span class="cv">SECRET</span>          <span class="cc"># převezme hodnotu z hostu</span>
+
+<span class="cc"># Mapa</span>
+<span class="ck">environment</span>:
+  <span class="ck">NODE_ENV</span>: <span class="cv">production</span>
+  <span class="ck">DB_PORT</span>: <span class="cn">5432</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">env_file:</div>
+      <div class="desc">Načtení proměnných z .env souboru</div>
+      <pre class="code"><span class="ck">env_file</span>:
+  - <span class="cv">.env</span>
+  - <span class="cv">.env.production</span>
+  - <span class="ck">path</span>: <span class="cv">./default.env</span>
+    <span class="ck">required</span>: <span class="cn">false</span>   <span class="cc"># Compose V2.24+</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Svazky a souborový systém</div>
+    <div class="entry">
+      <div class="key">volumes:</div>
+      <div class="desc">Bind mount nebo pojmenovaný svazek</div>
+      <pre class="code"><span class="ck">volumes</span>:
+  - <span class="cv">./data:/app/data</span>      <span class="cc"># bind mount</span>
+  - <span class="cv">pgdata:/var/lib/pg</span>    <span class="cc"># pojmenovaný</span>
+  - <span class="cv">/tmp</span>                  <span class="cc"># anonymní</span>
+
+  <span class="cc"># Dlouhá syntaxe</span>
+  - <span class="ck">type</span>: <span class="cv">bind</span>
+    <span class="ck">source</span>: <span class="cv">./config.yml</span>
+    <span class="ck">target</span>: <span class="cv">/etc/app/config.yml</span>
+    <span class="ck">read_only</span>: <span class="cn">true</span>
+    <span class="ck">bind</span>:
+      <span class="ck">create_host_path</span>: <span class="cn">true</span>
+      <span class="ck">propagation</span>: <span class="cv">shared</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">tmpfs:</div>
+      <div class="desc">Dočasný souborový systém v RAM</div>
+      <pre class="code"><span class="ck">tmpfs</span>:
+  - <span class="cv">/run</span>
+  - <span class="cv">/tmp:size=100m,mode=1777</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">working_dir:</div>
+      <div class="desc">Pracovní adresář uvnitř kontejneru</div>
+      <pre class="code"><span class="ck">working_dir</span>: <span class="cv">/app</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Příkazy a entrypoint</div>
+    <div class="entry">
+      <div class="key">command:</div>
+      <div class="desc">Přepíše CMD z Dockerfile</div>
+      <pre class="code"><span class="ck">command</span>: <span class="cv">python app.py --port 8080</span>
+<span class="ck">command</span>: [<span class="cv">"npm"</span>, <span class="cv">"run"</span>, <span class="cv">"start"</span>]</pre>
+    </div>
+    <div class="entry">
+      <div class="key">entrypoint:</div>
+      <div class="desc">Přepíše ENTRYPOINT z Dockerfile</div>
+      <pre class="code"><span class="ck">entrypoint</span>: <span class="cv">/entrypoint.sh</span>
+<span class="ck">entrypoint</span>: [<span class="cv">"/bin/sh"</span>, <span class="cv">"-c"</span>]</pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Restart a životní cyklus</div>
+    <div class="entry">
+      <div class="key">restart:</div>
+      <div class="desc">Politika restartu kontejneru</div>
+      <pre class="code"><span class="ck">restart</span>: <span class="cv">no</span>             <span class="cc"># výchozí – nikdy</span>
+<span class="ck">restart</span>: <span class="cv">always</span>         <span class="cc"># vždy restartovat</span>
+<span class="ck">restart</span>: <span class="cv">on-failure</span>     <span class="cc"># jen při nenulové exit</span>
+<span class="ck">restart</span>: <span class="cv">on-failure:3</span>   <span class="cc"># max 3 pokusy</span>
+<span class="ck">restart</span>: <span class="cv">unless-stopped</span> <span class="cc"># kromě ručního stop</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">stop_signal:</div>
+      <div class="desc">Signál pro zastavení (výchozí SIGTERM)</div>
+      <pre class="code"><span class="ck">stop_signal</span>: <span class="cv">SIGINT</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">stop_grace_period:</div>
+      <div class="desc">Čekací lhůta před SIGKILL</div>
+      <pre class="code"><span class="ck">stop_grace_period</span>: <span class="cv">30s</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Závislosti</div>
+    <div class="entry">
+      <div class="key">depends_on:</div>
+      <div class="desc">Spustit po jiných službách — s volitelnou podmínkou</div>
+      <pre class="code"><span class="ck">depends_on</span>:
+  <span class="ck">db</span>:
+    <span class="ck">condition</span>: <span class="cv">service_healthy</span>  <span class="cc"># čeká na healthcheck</span>
+  <span class="ck">redis</span>:
+    <span class="ck">condition</span>: <span class="cv">service_started</span>  <span class="cc"># výchozí</span>
+  <span class="ck">migrate</span>:
+    <span class="ck">condition</span>: <span class="cv">service_completed_successfully</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">links:</div><span class="badge badge-dep">zastaralé</span>
+      <div class="desc">Starý způsob propojení — dnes stačí sdílené sítě</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Healthcheck</div>
+    <div class="entry">
+      <div class="key">healthcheck:</div>
+      <div class="desc">Pravidelná kontrola zdraví kontejneru</div>
+      <pre class="code"><span class="ck">healthcheck</span>:
+  <span class="ck">test</span>: [<span class="cv">"CMD"</span>, <span class="cv">"curl"</span>, <span class="cv">"-f"</span>, <span class="cv">"http://localhost/health"</span>]
+  <span class="cc"># Alternativy:</span>
+  <span class="cc"># test: ["CMD-SHELL", "pg_isready -U postgres"]</span>
+  <span class="cc"># test: ["NONE"]  # zakáže healthcheck</span>
+  <span class="ck">interval</span>: <span class="cv">30s</span>           <span class="cc"># jak často testovat</span>
+  <span class="ck">timeout</span>: <span class="cv">10s</span>            <span class="cc"># max čekání na výsledek</span>
+  <span class="ck">retries</span>: <span class="cn">3</span>              <span class="cc"># po kolika selháních = unhealthy</span>
+  <span class="ck">start_period</span>: <span class="cv">40s</span>       <span class="cc"># grace period po startu</span>
+  <span class="ck">start_interval</span>: <span class="cv">5s</span>     <span class="cc"># interval v start_period (V2.23+)</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Uživatel a bezpečnost</div>
+    <div class="entry">
+      <div class="key">user:</div>
+      <div class="desc">Spustit kontejner jako daný uživatel</div>
+      <pre class="code"><span class="ck">user</span>: <span class="cv">"1000:1000"</span>
+<span class="ck">user</span>: <span class="cv">nobody</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">read_only:</div>
+      <div class="desc">Root filesystem jen pro čtení</div>
+      <pre class="code"><span class="ck">read_only</span>: <span class="cn">true</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">privileged:</div>
+      <div class="desc">Plný přístup k hostu — používat opatrně!</div>
+      <pre class="code"><span class="ck">privileged</span>: <span class="cn">true</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">cap_add: / cap_drop:</div>
+      <div class="desc">Přidat nebo odebrat Linux capabilities</div>
+      <pre class="code"><span class="ck">cap_add</span>:
+  - <span class="cv">NET_ADMIN</span>
+  - <span class="cv">SYS_PTRACE</span>
+<span class="ck">cap_drop</span>:
+  - <span class="cv">ALL</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">security_opt:</div>
+      <div class="desc">Bezpečnostní profily (seccomp, apparmor)</div>
+      <pre class="code"><span class="ck">security_opt</span>:
+  - <span class="cv">no-new-privileges:true</span>
+  - <span class="cv">seccomp:./seccomp.json</span>
+  - <span class="cv">apparmor:docker-default</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">secrets:</div>
+      <div class="desc">Tajné hodnoty přípustné ve službě</div>
+      <pre class="code"><span class="ck">secrets</span>:
+  - <span class="cv">db_password</span>
+  - <span class="ck">source</span>: <span class="cv">server_cert</span>
+    <span class="ck">target</span>: <span class="cv">/run/secrets/cert.pem</span>
+    <span class="ck">mode</span>: <span class="cn">0440</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Zdroje (standalone Compose V2)</div>
+    <div class="entry">
+      <div class="key">deploy: resources:</div>
+      <div class="desc">CPU a paměťové limity — preferovaný způsob</div>
+      <pre class="code"><span class="ck">deploy</span>:
+  <span class="ck">resources</span>:
+    <span class="ck">limits</span>:
+      <span class="ck">cpus</span>: <span class="cv">"0.50"</span>
+      <span class="ck">memory</span>: <span class="cv">512M</span>
+      <span class="ck">pids</span>: <span class="cn">100</span>
+    <span class="ck">reservations</span>:
+      <span class="ck">cpus</span>: <span class="cv">"0.25"</span>
+      <span class="ck">memory</span>: <span class="cv">128M</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">mem_limit: / cpus:</div><span class="badge badge-dep">V1 legacy</span>
+      <div class="desc">Starý způsob — funguje jen v Compose V1</div>
+      <pre class="code"><span class="ck">mem_limit</span>: <span class="cv">512m</span>
+<span class="ck">cpus</span>: <span class="cv">"0.5"</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">TTY, stdin a terminál</div>
+    <div class="entry">
+      <div class="key">stdin_open:</div>
+      <div class="desc">Otevřít stdin (ekvivalent docker run -i)</div>
+      <pre class="code"><span class="ck">stdin_open</span>: <span class="cn">true</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">tty:</div>
+      <div class="desc">Alokovat pseudo-TTY (ekvivalent docker run -t)</div>
+      <pre class="code"><span class="ck">tty</span>: <span class="cn">true</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">init:</div>
+      <div class="desc">Použít init jako PID 1 — správné přeposílání signálů</div>
+      <pre class="code"><span class="ck">init</span>: <span class="cn">true</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Ostatní volby</div>
+    <div class="entry">
+      <div class="key">labels:</div>
+      <div class="desc">Metadata kontejneru jako Docker labely</div>
+      <pre class="code"><span class="ck">labels</span>:
+  <span class="ck">app</span>: <span class="cv">myapp</span>
+  <span class="ck">version</span>: <span class="cv">"1.2"</span>
+  <span class="ck">traefik.enable</span>: <span class="cv">"true"</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">profiles:</div>
+      <div class="desc">Spustit službu jen při aktivaci profilu</div>
+      <pre class="code"><span class="ck">profiles</span>: [<span class="cv">"debug"</span>, <span class="cv">"tools"</span>]</pre>
+    </div>
+    <div class="entry">
+      <div class="key">scale:</div>
+      <div class="desc">Počet replik (přepisuje deploy.replicas)</div>
+      <pre class="code"><span class="ck">scale</span>: <span class="cn">3</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">devices:</div>
+      <div class="desc">Mapování zařízení z hostu</div>
+      <pre class="code"><span class="ck">devices</span>:
+  - <span class="cv">"/dev/ttyUSB0:/dev/ttyUSB0"</span>
+  - <span class="cv">"/dev/snd:/dev/snd"</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">shm_size:</div>
+      <div class="desc">Velikost sdílené paměti /dev/shm</div>
+      <pre class="code"><span class="ck">shm_size</span>: <span class="cv">"256m"</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">ipc: / pid:</div>
+      <div class="desc">Sdílení IPC nebo PID namespace</div>
+      <pre class="code"><span class="ck">ipc</span>: <span class="cv">host</span>
+<span class="ck">pid</span>: <span class="cv">host</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">sysctls:</div>
+      <div class="desc">Nastavení kernel parametrů</div>
+      <pre class="code"><span class="ck">sysctls</span>:
+  <span class="ck">net.core.somaxconn</span>: <span class="cn">1024</span>
+  <span class="ck">net.ipv4.tcp_syncookies</span>: <span class="cn">0</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">ulimits:</div>
+      <div class="desc">Limity procesů</div>
+      <pre class="code"><span class="ck">ulimits</span>:
+  <span class="ck">nofile</span>:
+    <span class="ck">soft</span>: <span class="cn">1024</span>
+    <span class="ck">hard</span>: <span class="cn">4096</span>
+  <span class="ck">nproc</span>: <span class="cn">65535</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">logging:</div>
+      <div class="desc">Konfigurace log ovladače</div>
+      <pre class="code"><span class="ck">logging</span>:
+  <span class="ck">driver</span>: <span class="cv">json-file</span>   <span class="cc"># json-file/syslog/none/fluentd</span>
+  <span class="ck">options</span>:
+    <span class="ck">max-size</span>: <span class="cv">"10m"</span>
+    <span class="ck">max-file</span>: <span class="cv">"3"</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">configs: (služba)</div>
+      <div class="desc">Připojit konfiguraci ze sekce configs</div>
+      <pre class="code"><span class="ck">configs</span>:
+  - <span class="ck">source</span>: <span class="cv">nginx_conf</span>
+    <span class="ck">target</span>: <span class="cv">/etc/nginx/nginx.conf</span>
+    <span class="ck">mode</span>: <span class="cn">0440</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">extends:</div>
+      <div class="desc">Zdědit konfiguraci z jiné služby nebo souboru</div>
+      <pre class="code"><span class="ck">extends</span>:
+  <span class="ck">file</span>: <span class="cv">common.yml</span>
+  <span class="ck">service</span>: <span class="cv">webapp</span></pre>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ==================== NETWORKS ==================== -->
+<div class="section" id="tab-network">
+<div class="section-title">networks — definice sítí</div>
+<div class="grid">
+
+  <div class="card">
+    <div class="card-label">Typy a základní volby</div>
+    <div class="entry">
+      <div class="key">driver:</div>
+      <div class="desc">Typ (driver) sítě</div>
+      <pre class="code"><span class="ck">driver</span>: <span class="cv">bridge</span>    <span class="cc"># výchozí – izolovaná bridge síť</span>
+<span class="ck">driver</span>: <span class="cv">host</span>      <span class="cc"># sdílí síťový stack hostu</span>
+<span class="ck">driver</span>: <span class="cv">overlay</span>   <span class="cc"># Swarm – multi-host komunikace</span>
+<span class="ck">driver</span>: <span class="cv">none</span>      <span class="cc"># bez sítě</span>
+<span class="ck">driver</span>: <span class="cv">macvlan</span>   <span class="cc"># vlastní MAC adresa</span>
+<span class="ck">driver</span>: <span class="cv">ipvlan</span>    <span class="cc"># sdílí MAC, vlastní IP</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">driver_opts:</div>
+      <div class="desc">Volby specifické pro daný driver</div>
+      <pre class="code"><span class="ck">driver_opts</span>:
+  <span class="ck">com.docker.network.bridge.name</span>: <span class="cv">my_bridge</span>
+  <span class="ck">com.docker.network.driver.mtu</span>: <span class="cv">"1450"</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">external:</div>
+      <div class="desc">Použít existující síť — Compose ji nevytvoří</div>
+      <pre class="code"><span class="ck">networks</span>:
+  <span class="ck">existing-net</span>:
+    <span class="ck">external</span>: <span class="cn">true</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">name:</div>
+      <div class="desc">Explicitní název sítě (bez prefixu projektu)</div>
+      <pre class="code"><span class="ck">name</span>: <span class="cv">shared-network</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">internal:</div>
+      <div class="desc">Izolovaná síť bez přístupu k internetu</div>
+      <pre class="code"><span class="ck">internal</span>: <span class="cn">true</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">attachable:</div>
+      <div class="desc">Umožní ruční připojení kontejnerů (overlay)</div>
+      <pre class="code"><span class="ck">attachable</span>: <span class="cn">true</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">enable_ipv6:</div>
+      <div class="desc">Zapnout IPv6 na síti</div>
+      <pre class="code"><span class="ck">enable_ipv6</span>: <span class="cn">true</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">IPAM — správa IP adres</div>
+    <div class="entry">
+      <div class="key">ipam:</div>
+      <div class="desc">Konfigurace rozsahu IP adres</div>
+      <pre class="code"><span class="ck">networks</span>:
+  <span class="ck">mynet</span>:
+    <span class="ck">ipam</span>:
+      <span class="ck">driver</span>: <span class="cv">default</span>
+      <span class="ck">config</span>:
+        - <span class="ck">subnet</span>: <span class="cv">172.20.0.0/16</span>
+          <span class="ck">gateway</span>: <span class="cv">172.20.0.1</span>
+          <span class="ck">ip_range</span>: <span class="cv">172.20.1.0/24</span>
+          <span class="ck">aux_addresses</span>:
+            <span class="ck">reserved</span>: <span class="cv">172.20.0.10</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Připojení služby k síti</div>
+    <div class="entry">
+      <div class="key">aliases:</div>
+      <div class="desc">Další hostname pro tuto službu v dané síti</div>
+      <pre class="code"><span class="ck">networks</span>:
+  <span class="ck">backend</span>:
+    <span class="ck">aliases</span>:
+      - <span class="cv">database</span>
+      - <span class="cv">db-primary</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">ipv4_address: / ipv6_address:</div>
+      <div class="desc">Statická IP adresa v dané síti</div>
+      <pre class="code"><span class="ck">networks</span>:
+  <span class="ck">mynet</span>:
+    <span class="ck">ipv4_address</span>: <span class="cv">172.20.0.10</span>
+    <span class="ck">ipv6_address</span>: <span class="cv">2001:db8::10</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">priority:</div>
+      <div class="desc">Priorita sítě — vyšší = výchozí síťové rozhraní</div>
+      <pre class="code"><span class="ck">networks</span>:
+  <span class="ck">frontend</span>:
+    <span class="ck">priority</span>: <span class="cn">100</span>
+  <span class="ck">backend</span>:
+    <span class="ck">priority</span>: <span class="cn">10</span></pre>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ==================== VOLUMES ==================== -->
+<div class="section" id="tab-volumes">
+<div class="section-title">volumes — definice svazků</div>
+<div class="grid">
+
+  <div class="card">
+    <div class="card-label">Top-level definice svazku</div>
+    <div class="entry">
+      <div class="key">driver:</div>
+      <div class="desc">Ovladač svazku</div>
+      <pre class="code"><span class="ck">driver</span>: <span class="cv">local</span>       <span class="cc"># výchozí</span>
+<span class="ck">driver</span>: <span class="cv">nfs</span>
+<span class="ck">driver</span>: <span class="cv">cifs</span>
+<span class="ck">driver</span>: <span class="cv">azure-file</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">driver_opts:</div>
+      <div class="desc">Volby ovladače — např. NFS mount</div>
+      <pre class="code"><span class="ck">volumes</span>:
+  <span class="ck">nfs_data</span>:
+    <span class="ck">driver</span>: <span class="cv">local</span>
+    <span class="ck">driver_opts</span>:
+      <span class="ck">type</span>: <span class="cv">nfs</span>
+      <span class="ck">o</span>: <span class="cv">addr=192.168.1.1,rw,nfsvers=4</span>
+      <span class="ck">device</span>: <span class="cv">":/exports/data"</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">external:</div>
+      <div class="desc">Použít existující svazek (musí existovat před spuštěním)</div>
+      <pre class="code"><span class="ck">volumes</span>:
+  <span class="ck">pgdata</span>:
+    <span class="ck">external</span>: <span class="cn">true</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">name:</div>
+      <div class="desc">Explicitní název svazku (bez prefixu projektu)</div>
+      <pre class="code"><span class="ck">name</span>: <span class="cv">my-pgdata</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">labels:</div>
+      <div class="desc">Metadata svazku</div>
+      <pre class="code"><span class="ck">labels</span>:
+  <span class="ck">backup</span>: <span class="cv">daily</span>
+  <span class="ck">project</span>: <span class="cv">myapp</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Typy připojení v services.volumes</div>
+    <div class="entry">
+      <div class="key">Pojmenovaný svazek</div>
+      <div class="desc">Docker spravuje umístění — data přežijí down</div>
+      <pre class="code"><span class="ck">volumes</span>:
+  - <span class="cv">pgdata:/var/lib/postgresql/data</span>
+  - <span class="cv">redisdata:/data</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">Bind mount</div>
+      <div class="desc">Přímé mapování adresáře nebo souboru z hostu</div>
+      <pre class="code"><span class="ck">volumes</span>:
+  - <span class="cv">./app:/app</span>                <span class="cc"># relativní cesta</span>
+  - <span class="cv">/etc/localtime:/etc/localtime:ro</span>
+  - <span class="cv">~/config:/config</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">Anonymní svazek</div>
+      <div class="desc">Jen cílová cesta — Docker přiřadí náhodné ID</div>
+      <pre class="code"><span class="ck">volumes</span>:
+  - <span class="cv">/var/cache/nginx</span>
+  - <span class="cv">/tmp/app</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">Dlouhá syntaxe (type)</div>
+      <div class="desc">Detailní konfigurace s explicitním typem</div>
+      <pre class="code"><span class="ck">volumes</span>:
+  - <span class="ck">type</span>: <span class="cv">volume</span>
+    <span class="ck">source</span>: <span class="cv">pgdata</span>
+    <span class="ck">target</span>: <span class="cv">/var/lib/pg</span>
+    <span class="ck">read_only</span>: <span class="cn">false</span>
+    <span class="ck">volume</span>:
+      <span class="ck">nocopy</span>: <span class="cn">true</span>      <span class="cc"># nekopírovat obsah kontejneru</span>
+  - <span class="ck">type</span>: <span class="cv">bind</span>
+    <span class="ck">source</span>: <span class="cv">./config</span>
+    <span class="ck">target</span>: <span class="cv">/app/config</span>
+    <span class="ck">read_only</span>: <span class="cn">true</span>
+    <span class="ck">bind</span>:
+      <span class="ck">create_host_path</span>: <span class="cn">true</span>
+      <span class="ck">propagation</span>: <span class="cv">shared</span>  <span class="cc"># shared/slave/private</span>
+  - <span class="ck">type</span>: <span class="cv">tmpfs</span>
+    <span class="ck">target</span>: <span class="cv">/tmp</span>
+    <span class="ck">tmpfs</span>:
+      <span class="ck">size</span>: <span class="cn">104857600</span>      <span class="cc"># 100MB v bajtech</span>
+      <span class="ck">mode</span>: <span class="cn">1777</span></pre>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ==================== BUILD ==================== -->
+<div class="section" id="tab-build">
+<div class="section-title">build — sestavení obrazu</div>
+<div class="grid">
+
+  <div class="card">
+    <div class="card-label">Základní build volby</div>
+    <div class="entry">
+      <div class="key">context:</div>
+      <div class="desc">Build kontext — adresář nebo Git URL</div>
+      <pre class="code"><span class="ck">build</span>:
+  <span class="ck">context</span>: <span class="cv">.</span>
+  <span class="ck">context</span>: <span class="cv">./backend</span>
+  <span class="ck">context</span>: <span class="cv">https://github.com/user/repo.git</span>
+  <span class="ck">context</span>: <span class="cv">https://github.com/user/repo.git#branch</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">dockerfile:</div>
+      <div class="desc">Cesta k Dockerfile (výchozí: ./Dockerfile)</div>
+      <pre class="code"><span class="ck">dockerfile</span>: <span class="cv">Dockerfile.prod</span>
+<span class="ck">dockerfile</span>: <span class="cv">docker/Dockerfile</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">dockerfile_inline:</div>
+      <div class="desc">Inline obsah Dockerfile</div>
+      <pre class="code"><span class="ck">dockerfile_inline</span>: |
+  FROM alpine:3.19
+  RUN apk add --no-cache curl
+  COPY . /app</pre>
+    </div>
+    <div class="entry">
+      <div class="key">args:</div>
+      <div class="desc">Hodnoty pro ARG instrukce v Dockerfile</div>
+      <pre class="code"><span class="ck">args</span>:
+  - <span class="cv">NODE_VERSION=20</span>
+  - <span class="cv">ENV=production</span>
+  <span class="cc"># nebo mapa:</span>
+  <span class="ck">NODE_VERSION</span>: <span class="cv">"20"</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">target:</div>
+      <div class="desc">Multi-stage build — cílová stage</div>
+      <pre class="code"><span class="ck">target</span>: <span class="cv">production</span>
+<span class="ck">target</span>: <span class="cv">builder</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Pokročilé build volby (BuildKit)</div>
+    <div class="entry">
+      <div class="key">cache_from: / cache_to:</div>
+      <div class="desc">Správa cache vrstev při buildu</div>
+      <pre class="code"><span class="ck">cache_from</span>:
+  - <span class="cv">myapp:latest</span>
+  - <span class="ck">type</span>=<span class="cv">registry,ref=myregistry/myapp</span>
+  - <span class="ck">type</span>=<span class="cv">gha</span>              <span class="cc"># GitHub Actions cache</span>
+<span class="ck">cache_to</span>:
+  - <span class="ck">type</span>=<span class="cv">inline</span>
+  - <span class="ck">type</span>=<span class="cv">gha,mode=max</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">platforms:</div>
+      <div class="desc">Multi-arch build (vyžaduje BuildKit)</div>
+      <pre class="code"><span class="ck">platforms</span>:
+  - <span class="cv">linux/amd64</span>
+  - <span class="cv">linux/arm64</span>
+  - <span class="cv">linux/arm/v7</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">secrets:</div>
+      <div class="desc">Tajné hodnoty dostupné jen při buildu (BuildKit)</div>
+      <pre class="code"><span class="ck">secrets</span>:
+  - <span class="cv">server-certificate</span>
+  - <span class="ck">id</span>: <span class="cv">mysecret</span>
+    <span class="ck">src</span>: <span class="cv">./mysecret.txt</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">ssh:</div>
+      <div class="desc">SSH agent socket — pro privátní git repozitáře</div>
+      <pre class="code"><span class="ck">ssh</span>:
+  - <span class="cv">default</span>
+  - <span class="cv">mykey=~/.ssh/deploy_key</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">network:</div>
+      <div class="desc">Síťový mód během buildu</div>
+      <pre class="code"><span class="ck">network</span>: <span class="cv">host</span>
+<span class="ck">network</span>: <span class="cv">none</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">tags:</div>
+      <div class="desc">Přidat další tagy výslednému obrazu</div>
+      <pre class="code"><span class="ck">tags</span>:
+  - <span class="cv">myapp:latest</span>
+  - <span class="cv">myapp:1.2.3</span>
+  - <span class="cv">myregistry.io/myapp:latest</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">labels:</div>
+      <div class="desc">OCI labely přidané do výsledného obrazu</div>
+      <pre class="code"><span class="ck">labels</span>:
+  <span class="ck">org.opencontainers.image.version</span>: <span class="cv">"1.2.3"</span>
+  <span class="ck">org.opencontainers.image.source</span>: <span class="cv">https://...</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">shm_size:</div>
+      <div class="desc">Velikost /dev/shm během buildu</div>
+      <pre class="code"><span class="ck">shm_size</span>: <span class="cv">"128m"</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">no_cache: / pull:</div>
+      <div class="desc">Zakázat cache / vždy stáhnout nový base image</div>
+      <pre class="code"><span class="ck">no_cache</span>: <span class="cn">true</span>
+<span class="ck">pull</span>: <span class="cn">true</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">additional_contexts:</div>
+      <div class="desc">Pojmenované build kontexty (Compose V2)</div>
+      <pre class="code"><span class="ck">additional_contexts</span>:
+  <span class="ck">mylib</span>: <span class="cv">../mylib</span>
+  <span class="ck">node-base</span>: <span class="cv">docker-image://node:20</span></pre>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ==================== DOCKERFILE ==================== -->
+<div class="section" id="tab-dockerfile">
+<div class="section-title">Dockerfile — podrobný tahák</div>
+<div class="tip">
+  <strong>Dockerfile reference:</strong> Instrukce se vykonávají shora dolů. Soubor typicky začíná <code>FROM</code>; před ním mohou být jen parser directives, komentáře a globálně scoped <code>ARG</code>. Docker doporučuje psát instrukce velkými písmeny. Pro moderní build používej BuildKit a preferuj <code>COPY</code> před <code>ADD</code>, pokud nepotřebuješ jeho speciální chování.
+</div>
+<div class="grid">
+
+  <div class="card col-full">
+    <div class="card-label">Základní kostra</div>
+    <pre class="code"><span class="cc"># syntax=docker/dockerfile:1</span>
+<span class="ck">ARG</span> <span class="cv">NODE_VERSION=20</span>
+<span class="ck">FROM</span> <span class="cv">node:${NODE_VERSION}-alpine</span> <span class="ck">AS</span> <span class="cv">base</span>
+
+<span class="ck">WORKDIR</span> <span class="cv">/app</span>
+<span class="ck">COPY</span> <span class="cv">package*.json ./</span>
+<span class="ck">RUN</span> <span class="cv">npm ci</span>
+<span class="ck">COPY</span> <span class="cv">. .</span>
+<span class="ck">RUN</span> <span class="cv">npm run build</span>
+
+<span class="ck">FROM</span> <span class="cv">node:${NODE_VERSION}-alpine</span> <span class="ck">AS</span> <span class="cv">runtime</span>
+<span class="ck">WORKDIR</span> <span class="cv">/app</span>
+<span class="ck">ENV</span> <span class="cv">NODE_ENV=production</span>
+<span class="ck">COPY</span> <span class="cv">--from=base /app/dist ./dist</span>
+<span class="ck">COPY</span> <span class="cv">--from=base /app/node_modules ./node_modules</span>
+<span class="ck">EXPOSE</span> <span class="cn">3000</span>
+<span class="ck">USER</span> <span class="cv">node</span>
+<span class="ck">CMD</span> [<span class="cv">"node"</span>, <span class="cv">"dist/server.js"</span>]</pre>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Parser directives a formát</div>
+    <div class="entry">
+      <div class="key"># syntax=</div>
+      <div class="desc">Vybere frontend parseru Dockerfile a zpřístupní nové BuildKit funkce</div>
+      <pre class="code"><span class="cc"># syntax=docker/dockerfile:1</span>
+<span class="cc"># syntax=docker/dockerfile:1.10</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key"># escape=</div>
+      <div class="desc">Mění escape znak; hodí se hlavně na Windows Dockerfiles</div>
+      <pre class="code"><span class="cc"># escape=\</span>
+<span class="cc"># escape=`</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key"># check=</div>
+      <div class="desc">Parser/build checks v novějších verzích Dockerfile frontendu</div>
+      <pre class="code"><span class="cc"># check=skip=JSONArgsRecommended</span>
+<span class="cc"># check=error=true</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">Komentáře a pořadí</div>
+      <div class="desc">Instrukce běží postupně; parser directives musí být úplně nahoře před běžnými komentáři i instrukcemi</div>
+      <pre class="code"><span class="cc"># syntax=docker/dockerfile:1</span>
+<span class="cc"># comment</span>
+<span class="ck">FROM</span> <span class="cv">alpine</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">Shell form vs exec form</div>
+      <div class="desc">Shell form spouští shell; exec form je JSON pole bez implicitního shellu</div>
+      <pre class="code"><span class="ck">RUN</span> <span class="cv">apk add --no-cache curl</span>
+<span class="ck">RUN</span> [<span class="cv">"apk"</span>, <span class="cv">"add"</span>, <span class="cv">"--no-cache"</span>, <span class="cv">"curl"</span>]
+
+<span class="ck">CMD</span> <span class="cv">node server.js</span>
+<span class="ck">CMD</span> [<span class="cv">"node"</span>, <span class="cv">"server.js"</span>]</pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Základ image a stage</div>
+    <div class="entry">
+      <div class="key">FROM</div>
+      <div class="desc">Určuje base image; Dockerfile musí začít touto instrukcí nebo globálním <code>ARG</code></div>
+      <pre class="code"><span class="ck">FROM</span> <span class="cv">alpine:3.20</span>
+<span class="ck">FROM</span> <span class="cv">node:20-alpine</span> <span class="ck">AS</span> <span class="cv">build</span>
+<span class="ck">FROM</span> <span class="cv">--platform=$TARGETPLATFORM nginx:alpine</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">ARG před FROM</div>
+      <div class="desc">Globální build argumenty lze použít při výběru base image</div>
+      <pre class="code"><span class="ck">ARG</span> <span class="cv">NODE_VERSION=20</span>
+<span class="ck">FROM</span> <span class="cv">node:${NODE_VERSION}-alpine</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">AS stage-name</div>
+      <div class="desc">Pojmenuje build stage pro pozdější <code>COPY --from</code></div>
+      <pre class="code"><span class="ck">FROM</span> <span class="cv">golang:1.24</span> <span class="ck">AS</span> <span class="cv">builder</span>
+<span class="ck">FROM</span> <span class="cv">scratch</span>
+<span class="ck">COPY</span> <span class="cv">--from=builder /app/server /server</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">Multi-stage build</div>
+      <div class="desc">Odděl build závislosti od runtime image; výsledný image je menší a čistší</div>
+      <pre class="code"><span class="ck">FROM</span> <span class="cv">python:3.12</span> <span class="ck">AS</span> <span class="cv">build</span>
+<span class="ck">RUN</span> <span class="cv">pip install --prefix=/install -r requirements.txt</span>
+
+<span class="ck">FROM</span> <span class="cv">python:3.12-slim</span>
+<span class="ck">COPY</span> <span class="cv">--from=build /install /usr/local</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Soubory a build context</div>
+    <div class="entry">
+      <div class="key">COPY</div>
+      <div class="desc">Kopíruje soubory z build contextu, stage, image nebo named contextu; pro běžné kopírování je to preferovaná volba</div>
+      <pre class="code"><span class="ck">COPY</span> <span class="cv">package.json package-lock.json ./</span>
+<span class="ck">COPY</span> <span class="cv">src/ ./src/</span>
+<span class="ck">COPY</span> <span class="cv">--from=build /app/bin/myapp /usr/local/bin/myapp</span>
+<span class="ck">COPY</span> <span class="cv">--chown=node:node --chmod=755 docker-entrypoint.sh /usr/local/bin/</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">ADD</div>
+      <div class="desc">Umí navíc remote URL a automatické rozbalení lokálních archivů; používej jen když tyto vlastnosti opravdu potřebuješ</div>
+      <pre class="code"><span class="ck">ADD</span> <span class="cv">app.tar.gz /opt/app/</span>
+<span class="ck">ADD</span> <span class="cv">https://example.com/archive.tgz /tmp/</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">.dockerignore</div>
+      <div class="desc">Omezuje build context; zásadní pro rychlost buildu a menší cache invalidace</div>
+      <pre class="code"><span class="cc">node_modules</span>
+<span class="cc">dist</span>
+<span class="cc">.git</span>
+<span class="cc">*.log</span>
+<span class="cc">.env</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">VOLUME</div>
+      <div class="desc">Deklaruje mount point uvnitř image; nedefinuje host path</div>
+      <pre class="code"><span class="ck">VOLUME</span> [<span class="cv">"/var/lib/postgresql/data"</span>]
+<span class="ck">VOLUME</span> <span class="cv">/data</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">EXPOSE</div>
+      <div class="desc">Dokumentuje porty, které aplikace poslouchá; port sám nepublikuje</div>
+      <pre class="code"><span class="ck">EXPOSE</span> <span class="cn">80</span>
+<span class="ck">EXPOSE</span> <span class="cn">3000</span>/<span class="cv">tcp</span>
+<span class="ck">EXPOSE</span> <span class="cn">53</span>/<span class="cv">udp</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Build-time instrukce</div>
+    <div class="entry">
+      <div class="key">RUN</div>
+      <div class="desc">Provádí příkazy při buildu a vytváří novou vrstvu; časté změny v tomto kroku rozbíjí cache</div>
+      <pre class="code"><span class="ck">RUN</span> <span class="cv">apk add --no-cache curl git</span>
+<span class="ck">RUN</span> <span class="cv">&lt;&lt;EOF
+apt-get update
+apt-get install -y curl
+EOF</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">RUN --mount</div>
+      <div class="desc">BuildKit mounty pro cache, secrets, bind nebo ssh bez zanechání dat ve výsledné image</div>
+      <pre class="code"><span class="ck">RUN</span> <span class="cv">--mount=type=cache,target=/root/.npm npm ci</span>
+<span class="ck">RUN</span> <span class="cv">--mount=type=secret,id=npmrc,target=/root/.npmrc npm ci</span>
+<span class="ck">RUN</span> <span class="cv">--mount=type=ssh git clone git@github.com:org/private-repo.git</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">RUN --network</div>
+      <div class="desc">Řídí síťový přístup konkrétního build kroku</div>
+      <pre class="code"><span class="ck">RUN</span> <span class="cv">--network=none npm test</span>
+<span class="ck">RUN</span> <span class="cv">--network=host apk add --no-cache curl</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">SHELL</div>
+      <div class="desc">Mění výchozí shell pro shell-form instrukce; užitečné na Windows nebo pro bash strict mode</div>
+      <pre class="code"><span class="ck">SHELL</span> [<span class="cv">"/bin/bash"</span>, <span class="cv">"-o"</span>, <span class="cv">"pipefail"</span>, <span class="cv">"-c"</span>]
+<span class="ck">SHELL</span> [<span class="cv">"powershell"</span>, <span class="cv">"-Command"</span>]</pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Proměnné a metadata</div>
+    <div class="entry">
+      <div class="key">ARG</div>
+      <div class="desc">Build-time proměnná; není automaticky dostupná v běžícím kontejneru a nemá se používat na tajné hodnoty</div>
+      <pre class="code"><span class="ck">ARG</span> <span class="cv">NODE_VERSION=20</span>
+<span class="ck">ARG</span> <span class="cv">TARGETPLATFORM</span>
+<span class="ck">RUN</span> <span class="cv">echo $TARGETPLATFORM</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">ENV</div>
+      <div class="desc">Nastaví environment proměnné pro další build kroky i runtime; hodnota se persistuje do image</div>
+      <pre class="code"><span class="ck">ENV</span> <span class="cv">NODE_ENV=production</span>
+<span class="ck">ENV</span> <span class="cv">APP_HOME=/app</span>
+<span class="ck">ENV</span> <span class="cv">PATH=/app/bin:$PATH</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">ARG + ENV dohromady</div>
+      <div class="desc">Běžný vzor pro build override s runtime defaultem</div>
+      <pre class="code"><span class="ck">ARG</span> <span class="cv">APP_ENV=production</span>
+<span class="ck">ENV</span> <span class="cv">APP_ENV=${APP_ENV}</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">LABEL</div>
+      <div class="desc">Metadata image, typicky OCI labels pro verzi, zdroj a dokumentaci</div>
+      <pre class="code"><span class="ck">LABEL</span> <span class="cv">org.opencontainers.image.title="myapp"</span>
+<span class="ck">LABEL</span> <span class="cv">org.opencontainers.image.source="https://github.com/acme/myapp"</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">MAINTAINER</div><span class="badge badge-dep">deprecated</span>
+      <div class="desc">Historická instrukce; dnes používej raději <code>LABEL</code></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Runtime chování kontejneru</div>
+    <div class="entry">
+      <div class="key">WORKDIR</div>
+      <div class="desc">Nastaví pracovní adresář pro následující <code>RUN</code>, <code>COPY</code>, <code>ADD</code>, <code>CMD</code> a <code>ENTRYPOINT</code>; pokud neexistuje, vytvoří se</div>
+      <pre class="code"><span class="ck">WORKDIR</span> <span class="cv">/app</span>
+<span class="ck">WORKDIR</span> <span class="cv">src</span>          <span class="cc"># výsledkem je /app/src</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">USER</div>
+      <div class="desc">Určuje uživatele pro další build kroky i runtime; pro produkci je lepší neběžet jako root</div>
+      <pre class="code"><span class="ck">USER</span> <span class="cv">node</span>
+<span class="ck">USER</span> <span class="cv">1000:1000</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">CMD</div>
+      <div class="desc">Výchozí příkaz nebo argumenty; použije se jen poslední <code>CMD</code></div>
+      <pre class="code"><span class="ck">CMD</span> [<span class="cv">"nginx"</span>, <span class="cv">"-g"</span>, <span class="cv">"daemon off;"</span>]
+<span class="ck">CMD</span> [<span class="cv">"--port"</span>, <span class="cv">"3000"</span>]</pre>
+    </div>
+    <div class="entry">
+      <div class="key">ENTRYPOINT</div>
+      <div class="desc">Hlavní executable kontejneru; s <code>CMD</code> se často kombinuje jako default argumenty</div>
+      <pre class="code"><span class="ck">ENTRYPOINT</span> [<span class="cv">"/usr/local/bin/docker-entrypoint.sh"</span>]
+<span class="ck">CMD</span> [<span class="cv">"nginx"</span>, <span class="cv">"-g"</span>, <span class="cv">"daemon off;"</span>]</pre>
+    </div>
+    <div class="entry">
+      <div class="key">HEALTHCHECK</div>
+      <div class="desc">Definuje kontrolu zdraví kontejneru; jen poslední instrukce se počítá</div>
+      <pre class="code"><span class="ck">HEALTHCHECK</span> <span class="cv">--interval=30s --timeout=3s --retries=3 CMD curl -f http://localhost/health || exit 1</span>
+<span class="ck">HEALTHCHECK</span> <span class="cv">NONE</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">STOPSIGNAL</div>
+      <div class="desc">Specifikuje signál použitý při ukončování kontejneru</div>
+      <pre class="code"><span class="ck">STOPSIGNAL</span> <span class="cv">SIGTERM</span>
+<span class="ck">STOPSIGNAL</span> <span class="cv">SIGQUIT</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Rozšířené patterny a varování</div>
+    <div class="entry">
+      <div class="key">ONBUILD</div>
+      <div class="desc">Odložená instrukce spuštěná až při použití image jako base image; užitečné jen pro specifické base image scénáře</div>
+      <pre class="code"><span class="ck">ONBUILD</span> <span class="cv">COPY . /src</span>
+<span class="ck">ONBUILD</span> <span class="cv">RUN npm ci</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">Cache layering</div>
+      <div class="desc">Nejstálejší kroky dávej nahoru. Typický pattern je nejdřív kopírovat lockfile, nainstalovat dependencies a až potom zbytek aplikace</div>
+      <pre class="code"><span class="ck">COPY</span> <span class="cv">package*.json ./</span>
+<span class="ck">RUN</span> <span class="cv">npm ci</span>
+<span class="ck">COPY</span> <span class="cv">. .</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">Secrets</div>
+      <div class="desc">Citlivé údaje nedávej do <code>ARG</code> ani <code>ENV</code>; pro build použij BuildKit secrets a pro runtime orchestration nástroje</div>
+      <pre class="code"><span class="ck">RUN</span> <span class="cv">--mount=type=secret,id=token,target=/run/secrets/token some-command</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">COPY vs ADD</div>
+      <div class="desc">Výchozí volba je <code>COPY</code>. <code>ADD</code> použij jen pro archive auto-extract nebo remote URL.</div>
+    </div>
+    <div class="entry">
+      <div class="key">Poslední vyhrává</div>
+      <div class="desc">U <code>CMD</code>, <code>ENTRYPOINT</code> a <code>HEALTHCHECK</code> má efekt jen poslední definice</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ==================== IMAGE ==================== -->
+<div class="section" id="tab-image">
+<div class="section-title">Docker image — vrstvy, immutable data, přenos a práce s image</div>
+<div class="tip">
+  <strong>Co je image:</strong> Docker image je read-only šablona pro spuštění kontejneru. Skládá se z vrstev, které reprezentují změny filesystemu. Vrstvy jsou immutable; při běhu kontejneru nad nimi vzniká tenká zapisovatelná container vrstva. Na novějších instalacích Docker Engine 29+ je lokální image store postavený na <code>containerd</code> snapshotters, zatímco <code>overlay2</code> je hlavně historické a koncepční pozadí pro pochopení union/copy-on-write modelu.
+</div>
+<div class="grid">
+
+  <div class="card col-full">
+    <div class="card-label">Infografika — z čeho je image a container složený</div>
+    <pre class="code"><span class="cc">docker run myapp:1.0</span>
+
+┌──────────────────────────────────────────────┐
+│ <span class="ck">Container writable layer</span>                   │
+│ <span class="cc">dočasné zápisy, úpravy, delete masky</span>      │
+│ <span class="cv">read-write, zmizí při smazání containeru</span> │
+└──────────────────────────────────────────────┘
+                    ▲
+┌──────────────────────────────────────────────┐
+│ <span class="ck">Layer 4</span>  app code / build output             │
+│ <span class="cv">COPY . .</span>                                   │
+└──────────────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│ <span class="ck">Layer 3</span>  dependencies                        │
+│ <span class="cv">RUN npm ci</span>                                 │
+└──────────────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│ <span class="ck">Layer 2</span>  runtime / packages                  │
+│ <span class="cv">RUN apk add nodejs</span>                         │
+└──────────────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│ <span class="ck">Layer 1</span>  base image                          │
+│ <span class="cv">FROM alpine</span>                                │
+└──────────────────────────────────────────────┘
+
+<span class="cc">Image = stack read-only vrstev</span>
+<span class="cc">Container = image + 1 writable vrstva nahoře</span>
+<span class="cc">Každá image vrstva je diff oproti vrstvě pod ní</span>
+<span class="cc">Union filesystem / overlay model je složí do jednoho pohledu</span></pre>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Základní pojmy</div>
+    <div class="entry">
+      <div class="key">Image</div>
+      <div class="desc">Read-only balíček obsahující binárky, knihovny, konfiguraci, metadata a výchozí runtime nastavení pro kontejner</div>
+    </div>
+    <div class="entry">
+      <div class="key">Layer</div>
+      <div class="desc">Sada změn filesystemu. Přidání, úprava i smazání souboru vytváří novou vrstvu nebo diff proti předchozí vrstvě</div>
+    </div>
+    <div class="entry">
+      <div class="key">Immutable vrstva</div>
+      <div class="desc">Jakmile je vrstva vytvořená, neupravuje se. Nové změny vznikají jen jako další vrstva nad ní</div>
+    </div>
+    <div class="entry">
+      <div class="key">Container layer</div>
+      <div class="desc">Dočasná zapisovatelná vrstva přidaná při <code>docker run</code>; odlišuje běžící container od image</div>
+    </div>
+    <div class="entry">
+      <div class="key">Tag vs digest</div>
+      <div class="desc"><code>tag</code> je lidsky čitelný ukazatel, <code>digest</code> je neměnný obsahový identifikátor typu <code>sha256:...</code></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Jak fungují vrstvy</div>
+    <div class="entry">
+      <div class="key">Každá vrstva je diff</div>
+      <div class="desc">Vrstva neobsahuje celý filesystem od nuly, ale jen změny proti předchozímu stavu. Finální image vznikne poskládáním těchto diffů</div>
+    </div>
+    <div class="entry">
+      <div class="key">Read-only stack</div>
+      <div class="desc">Image layers jsou sdílené, deduplikované a znovupoužitelné mezi více image i containery</div>
+    </div>
+    <div class="entry">
+      <div class="key">Metadata vrstvy</div>
+      <div class="desc">Některé Dockerfile instrukce mění jen metadata image a ve <code>docker history</code> se pak typicky objeví vrstva o velikosti <code>0B</code></div>
+    </div>
+    <div class="entry">
+      <div class="key">Delete není “opravdu pryč”</div>
+      <div class="desc">Smazání souboru vytvoří další vrstvu, která soubor skryje. Data z nižších vrstev mohou stále přispívat k celkové velikosti image</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Union filesystem a overlay model</div>
+    <div class="entry">
+      <div class="key">UnionFS princip</div>
+      <div class="desc">Více adresářových vrstev se složí do jednoho logického filesystemu, který container vidí jako jeden strom</div>
+    </div>
+    <div class="entry">
+      <div class="key">overlay2 / overlayfs</div>
+      <div class="desc">Klasický Docker storage driver pracující s lower layers a upper writable layer. Je dobrý mentální model pro pochopení image a container vrstev</div>
+    </div>
+    <div class="entry">
+      <div class="key">copy-on-write</div>
+      <div class="desc">Když container zapisuje do souboru ze spodní read-only vrstvy, Docker vytvoří upravenou kopii do writable vrstvy místo přímé změny spodní vrstvy</div>
+    </div>
+    <div class="entry">
+      <div class="key">whiteout / masking</div>
+      <div class="desc">Smazaný soubor je v horní vrstvě “zamaskovaný”, aby v union pohledu nebyl vidět, i když fyzicky existuje níž</div>
+    </div>
+    <div class="entry">
+      <div class="key">Novější realita</div>
+      <div class="desc">Na fresh Docker Engine 29+ běží image store defaultně přes <code>containerd</code> snapshotters, ale chování z pohledu uživatele je pořád vrstvené a copy-on-write</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Container vs image</div>
+    <div class="entry">
+      <div class="key">Image je template</div>
+      <div class="desc">Nemění se při běhu. Můžeš z ní spustit libovolný počet containerů</div>
+    </div>
+    <div class="entry">
+      <div class="key">Container je instance</div>
+      <div class="desc">Má procesy, síť, mounty a svoji vlastní writable vrstvu</div>
+    </div>
+    <div class="entry">
+      <div class="key">Více containerů, jedna image</div>
+      <div class="desc">Všechny sdílí stejné read-only image vrstvy a každý má jen vlastní tenkou horní vrstvu</div>
+    </div>
+    <div class="entry">
+      <div class="key">Persistovaná data</div>
+      <div class="desc">Pro databáze a write-heavy data nepoužívej container layer; použij volumes nebo bind mounts</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Jak se s image pracuje</div>
+    <div class="entry">
+      <div class="key">Vyhledání a stažení</div>
+      <div class="desc">Image typicky taháš z registru, nejčastěji Docker Hubu nebo privátního registry</div>
+      <pre class="code"><span class="ck">docker search</span> <span class="cv">nginx</span>
+<span class="ck">docker pull</span> <span class="cv">nginx:1.27-alpine</span>
+<span class="ck">docker pull</span> <span class="cv">ghcr.io/org/app:1.2.0</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">Build a tag</div>
+      <div class="desc">Lokálně si image vytvoříš z Dockerfile a pak jí dáš jméno/tag</div>
+      <pre class="code"><span class="ck">docker build</span> <span class="cv">-t myapp:1.0 .</span>
+<span class="ck">docker tag</span> <span class="cv">myapp:1.0 registry.example.com/team/myapp:1.0</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">Spuštění</div>
+      <div class="desc">Image se použije jako read-only základ pro container</div>
+      <pre class="code"><span class="ck">docker run</span> <span class="cv">--rm -p 8080:80 nginx:alpine</span>
+<span class="ck">docker run</span> <span class="cv">-d --name app myapp:1.0</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">Inspekce</div>
+      <div class="desc">Vrsty, metadata, config, entrypoint, env, digest a velikost zkontroluješ přes CLI</div>
+      <pre class="code"><span class="ck">docker image ls</span>
+<span class="ck">docker image history</span> <span class="cv">myapp:1.0</span>
+<span class="ck">docker image inspect</span> <span class="cv">myapp:1.0</span>
+<span class="ck">docker system df</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Naming, tagy a digesty</div>
+    <div class="entry">
+      <div class="key">Formát jména</div>
+      <div class="desc"><code>[registry/]namespace/repository[:tag]</code>; bez registry je výchozí Docker Hub</div>
+      <pre class="code"><span class="cv">nginx:alpine</span>
+<span class="cv">library/ubuntu:24.04</span>
+<span class="cv">ghcr.io/acme/api:1.4.2</span>
+<span class="cv">registry.example.com/platform/web:prod</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">Tag</div>
+      <div class="desc">Pohyblivá reference. <code>latest</code> není “nejnovější build obecně”, jen konkrétní tag v repozitáři</div>
+    </div>
+    <div class="entry">
+      <div class="key">Digest</div>
+      <div class="desc">Obsahově neměnná reference; ideální pro reproducibilní buildy a produkční pinning</div>
+      <pre class="code"><span class="ck">docker pull</span> <span class="cv">nginx@sha256:...</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">Multi-platform image</div>
+      <div class="desc">Jedno jméno může ukazovat na image index obsahující varianty pro více architektur, třeba <code>amd64</code> a <code>arm64</code></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Kde se images ukládají</div>
+    <div class="entry">
+      <div class="key">Lokální image store</div>
+      <div class="desc">Docker daemon si image ukládá lokálně; na moderních instalacích přes <code>containerd</code> image store, historicky přes storage driver typu <code>overlay2</code></div>
+    </div>
+    <div class="entry">
+      <div class="key">Registry</div>
+      <div class="desc">Nejběžnější distribuční bod pro týmy a CI/CD</div>
+      <pre class="code"><span class="cv">Docker Hub</span>
+<span class="cv">GHCR</span>
+<span class="cv">Harbor</span>
+<span class="cv">ECR / GCR / ACR</span>
+<span class="cv">privátní registry:2</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">Tar archiv</div>
+      <div class="desc">Pro offline přenos nebo backup můžeš image vyexportovat do souboru a nahrát jinde</div>
+    </div>
+    <div class="entry">
+      <div class="key">Desktop / Engine nuance</div>
+      <div class="desc">Při přepnutí mezi různými backendy image store se staré image můžou dočasně “schovat”, i když data zůstávají na disku</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Přenos image bez registru</div>
+    <div class="entry">
+      <div class="key">docker save</div>
+      <div class="desc">Vyexportuje image do tar archivu včetně parent layers a tagů</div>
+      <pre class="code"><span class="ck">docker image save</span> <span class="cv">myapp:1.0 &gt; myapp.tar</span>
+<span class="ck">docker image save</span> <span class="cv">-o myapp.tar myapp:1.0</span>
+<span class="ck">docker image save</span> <span class="cv">myapp:1.0 | gzip &gt; myapp.tar.gz</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">docker load</div>
+      <div class="desc">Na druhé straně archiv načteš zpět do lokálního image store; obnoví i tagy</div>
+      <pre class="code"><span class="ck">docker image load</span> <span class="cv">&lt; myapp.tar.gz</span>
+<span class="ck">docker image load</span> <span class="cv">-i myapp.tar</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">Jak to přenést</div>
+      <div class="desc">Soubor pošli přes <code>scp</code>, rsync, sdílený disk, USB nebo artifact storage. Pro velké image můžeš archiv komprimovat nebo rozdělit na části</div>
+      <pre class="code"><span class="ck">scp</span> <span class="cv">myapp.tar.gz user@server:/tmp/</span>
+<span class="ck">split</span> <span class="cv">-b 500m myapp.tar.gz myapp.part.</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">Kdy se to hodí</div>
+      <div class="desc">Air-gapped prostředí, migrace mezi sítěmi, backup před změnou storage backendu, jednorázový offline deploy</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Import, export a commit</div>
+    <div class="entry">
+      <div class="key">save/load</div>
+      <div class="desc">Zachová image jako image včetně vrstev a tagů; to je standardní způsob přenosu bez registry</div>
+    </div>
+    <div class="entry">
+      <div class="key">export/import</div>
+      <div class="desc"><code>docker export</code> a <code>docker import</code> pracují s filesystem snapshotem containeru, ne s plnohodnotnou image historií</div>
+      <pre class="code"><span class="ck">docker export</span> <span class="cv">mycontainer &gt; rootfs.tar</span>
+<span class="ck">cat</span> <span class="cv">rootfs.tar | docker import - myimage:flat</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">container commit</div>
+      <div class="desc">Vytvoří image z aktuálního stavu containeru; dobré na experimenty a pochopení vrstev, ale ne jako hlavní produkční workflow</div>
+      <pre class="code"><span class="ck">docker container commit</span> <span class="cv">mycontainer myimage:debug</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Optimalizace a best practices</div>
+    <div class="entry">
+      <div class="key">Stabilní kroky nahoru</div>
+      <div class="desc">Instrukce, které se mění málo, dávej dřív. Docker pak lépe reuse-ne cache a nebude zbytečně rebuildovat vše pod nimi</div>
+    </div>
+    <div class="entry">
+      <div class="key">Malé base image</div>
+      <div class="desc">Používej rozumně malé a důvěryhodné base image; často <code>alpine</code>, <code>slim</code> nebo distroless varianty podle use case</div>
+    </div>
+    <div class="entry">
+      <div class="key">Multi-stage build</div>
+      <div class="desc">Build nástroje nech v builder stage, do runtime stage kopíruj jen artefakty</div>
+    </div>
+    <div class="entry">
+      <div class="key">.dockerignore</div>
+      <div class="desc">Do build contextu neposílej zbytečnosti jako <code>.git</code>, <code>node_modules</code>, logy nebo secrets</div>
+    </div>
+    <div class="entry">
+      <div class="key">Prune a monitoring</div>
+      <div class="desc">Nechceš-li plný disk, průběžně sleduj usage a mazej nepoužívané image</div>
+      <pre class="code"><span class="ck">docker system df</span>
+<span class="ck">docker image prune</span>
+<span class="ck">docker system prune</span></pre>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ==================== CONTAINER ==================== -->
+<div class="section" id="tab-container">
+<div class="section-title">Docker container — runtime instance image</div>
+<div class="tip">
+  <strong>Co je container:</strong> Container je izolovaný proces spuštěný z image. Image zůstává read-only, container nad ní přidává vlastní zapisovatelnou vrstvu, síť, mounty a runtime konfiguraci. Jednu image můžeš použít pro mnoho containerů najednou.
+</div>
+<div class="grid">
+
+  <div class="card">
+    <div class="card-label">Základní mentální model</div>
+    <div class="entry">
+      <div class="key">Image → container</div>
+      <div class="desc">Image je šablona, container je její běžící nebo zastavená instance</div>
+    </div>
+    <div class="entry">
+      <div class="key">Izolace</div>
+      <div class="desc">Container běží jako proces s vlastním filesystem pohledem, sítí a resource limity podle toho, jak je spuštěn</div>
+    </div>
+    <div class="entry">
+      <div class="key">Writable layer</div>
+      <div class="desc">Změny za běhu se ukládají do horní zapisovatelné vrstvy; pro dlouhodobá data používej volumes nebo bind mounts</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Životní cyklus</div>
+    <div class="entry">
+      <div class="key">create</div>
+      <div class="desc">Vytvoří container bez spuštění procesu</div>
+      <pre class="code"><span class="ck">docker container create</span> <span class="cv">--name web nginx:alpine</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">run</div>
+      <div class="desc">Zkratka pro create + start</div>
+      <pre class="code"><span class="ck">docker run</span> <span class="cv">--name web -p 8080:80 nginx:alpine</span>
+<span class="ck">docker run</span> <span class="cv">-d --name app myapp:1.0</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">start / stop / restart / rm</div>
+      <div class="desc">Spuštění, zastavení, restart a odstranění existujícího containeru</div>
+      <pre class="code"><span class="ck">docker container start</span> <span class="cv">web</span>
+<span class="ck">docker container stop</span> <span class="cv">web</span>
+<span class="ck">docker container restart</span> <span class="cv">web</span>
+<span class="ck">docker container rm</span> <span class="cv">web</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Foreground a detached mode</div>
+    <div class="entry">
+      <div class="key">Foreground</div>
+      <div class="desc">Container běží v popředí a logy tečou přímo do terminálu</div>
+      <pre class="code"><span class="ck">docker run</span> <span class="cv">ubuntu echo hello</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">Detached</div>
+      <div class="desc">Container běží na pozadí; použij <code>-d</code> a logy sleduj zvlášť</div>
+      <pre class="code"><span class="ck">docker run</span> <span class="cv">-d --name web nginx:alpine</span>
+<span class="ck">docker logs</span> <span class="cv">-f web</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">Interaktivní shell</div>
+      <div class="desc">Pro TTY a stdin použij <code>-it</code></div>
+      <pre class="code"><span class="ck">docker run</span> <span class="cv">-it alpine sh</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Každodenní práce</div>
+    <div class="entry">
+      <div class="key">ps</div>
+      <div class="desc">Seznam běžících nebo všech containerů</div>
+      <pre class="code"><span class="ck">docker ps</span>
+<span class="ck">docker ps</span> <span class="cv">-a</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">exec</div>
+      <div class="desc">Spustí další proces v již běžícím containeru</div>
+      <pre class="code"><span class="ck">docker exec</span> <span class="cv">-it web sh</span>
+<span class="ck">docker exec</span> <span class="cv">app printenv</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">logs</div>
+      <div class="desc">Zobrazí log output containeru</div>
+      <pre class="code"><span class="ck">docker logs</span> <span class="cv">web</span>
+<span class="ck">docker logs</span> <span class="cv">-f --tail 100 web</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">inspect</div>
+      <div class="desc">Vrátí detailní JSON metadata včetně mountů, IP adres, env a stavu</div>
+      <pre class="code"><span class="ck">docker inspect</span> <span class="cv">web</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">stats</div>
+      <div class="desc">Průběžné CPU, memory, network a block I/O statistiky</div>
+      <pre class="code"><span class="ck">docker stats</span>
+<span class="ck">docker stats</span> <span class="cv">web app db</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Restart policy a ukončení</div>
+    <div class="entry">
+      <div class="key">--restart</div>
+      <div class="desc">Určuje, jestli a kdy má Docker container znovu spustit</div>
+      <pre class="code"><span class="ck">docker run</span> <span class="cv">--restart=no nginx</span>
+<span class="ck">docker run</span> <span class="cv">--restart=always nginx</span>
+<span class="ck">docker run</span> <span class="cv">--restart=unless-stopped nginx</span>
+<span class="ck">docker run</span> <span class="cv">--restart=on-failure:3 myjob</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">stop timeout</div>
+      <div class="desc">Docker pošle stop signál a čeká definovaný čas, než proces násilně ukončí</div>
+      <pre class="code"><span class="ck">docker run</span> <span class="cv">--stop-timeout=30 nginx</span>
+<span class="ck">docker stop</span> <span class="cv">-t 30 web</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">stop signal</div>
+      <div class="desc">Lze změnit signál, který Docker použije pro ukončení procesu</div>
+      <pre class="code"><span class="ck">docker run</span> <span class="cv">--stop-signal=SIGQUIT nginx</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Healthcheck a stav</div>
+    <div class="entry">
+      <div class="key">healthy / unhealthy / starting</div>
+      <div class="desc">Container může reportovat stav přes healthcheck definovaný v image nebo při run/Compose konfiguraci</div>
+    </div>
+    <div class="entry">
+      <div class="key">Přepsání při run</div>
+      <div class="desc">Při spuštění lze healthcheck vypnout nebo parametry upravit</div>
+      <pre class="code"><span class="ck">docker run</span> <span class="cv">--no-healthcheck nginx</span>
+<span class="ck">docker run</span> <span class="cv">--health-cmd="curl -f http://localhost || exit 1" --health-interval=30s nginx</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">Kontrola stavu</div>
+      <div class="desc">Status uvidíš přes <code>docker ps</code> nebo detailněji v <code>docker inspect</code></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ==================== STORAGE ==================== -->
+<div class="section" id="tab-storage">
+<div class="section-title">Storage — volumes, bind mounts a perzistence dat</div>
+<div class="tip">
+  <strong>Základní pravidlo:</strong> Data, která mají přežít smazání containeru, nepatří do container writable layer. Používej volumes, bind mounts nebo tmpfs podle typu dat a požadovaného chování.
+</div>
+<div class="grid">
+
+  <div class="card">
+    <div class="card-label">Mentální model</div>
+    <div class="entry">
+      <div class="key">Container layer</div>
+      <div class="desc">Zápisy do interní writable vrstvy containeru zaniknou při odstranění containeru</div>
+    </div>
+    <div class="entry">
+      <div class="key">Volume</div>
+      <div class="desc">Docker-managed storage mimo lifecycle konkrétního containeru</div>
+    </div>
+    <div class="entry">
+      <div class="key">Bind mount</div>
+      <div class="desc">Přímé mapování cesty z hosta do containeru</div>
+    </div>
+    <div class="entry">
+      <div class="key">tmpfs</div>
+      <div class="desc">Dočasný filesystem v paměti hosta, vhodný pro ephemeral a citlivá data</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Volume vs bind mount vs tmpfs</div>
+    <div class="entry">
+      <div class="key">Named volume</div>
+      <div class="desc">Nejlepší default pro perzistentní aplikační data a databáze; Docker řeší umístění a správu</div>
+      <pre class="code"><span class="ck">docker run</span> <span class="cv">-v pgdata:/var/lib/postgresql/data postgres</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">Bind mount</div>
+      <div class="desc">Hodí se pro development, sdílení zdrojáků nebo explicitní práci s konkrétní host cestou</div>
+      <pre class="code"><span class="ck">docker run</span> <span class="cv">--mount type=bind,src=$PWD,target=/app nginx</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">tmpfs</div>
+      <div class="desc">Data se neukládají do vrstvy ani na disk mountu; po stop/smazání mizí</div>
+      <pre class="code"><span class="ck">docker run</span> <span class="cv">--tmpfs /run nginx</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Praktické mount syntaxe</div>
+    <div class="entry">
+      <div class="key">--mount</div>
+      <div class="desc">Explicitnější a čitelnější syntaxe podporující více mount typů a voleb</div>
+      <pre class="code"><span class="ck">docker run</span> <span class="cv">--mount source=pgdata,target=/data postgres</span>
+<span class="ck">docker run</span> <span class="cv">--mount type=bind,src=$PWD,target=/app alpine</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">-v / --volume</div>
+      <div class="desc">Kratší syntaxe, pořád běžně používaná</div>
+      <pre class="code"><span class="ck">docker run</span> <span class="cv">-v pgdata:/data postgres</span>
+<span class="ck">docker run</span> <span class="cv">-v $PWD:/app alpine</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">read-only</div>
+      <div class="desc">Mount může být jen pro čtení</div>
+      <pre class="code"><span class="ck">docker run</span> <span class="cv">--mount type=bind,src=/etc/config,target=/config,readonly app</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Lifecycle dat</div>
+    <div class="entry">
+      <div class="key">Volume data žijí dál</div>
+      <div class="desc">Po <code>docker rm</code> volume standardně zůstane, dokud ji explicitně nesmažeš</div>
+    </div>
+    <div class="entry">
+      <div class="key">Anonymous volume</div>
+      <div class="desc">Docker vytvoří volume bez přiděleného jména; snadno se pak hůř dohledává a uklízí</div>
+    </div>
+    <div class="entry">
+      <div class="key">Bind mount je navázaný na host path</div>
+      <div class="desc">Container je pak závislý na konkrétní struktuře host systému</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Backup a obnova</div>
+    <div class="entry">
+      <div class="key">Volume backup přes pomocný container</div>
+      <div class="desc">Docker docs ukazují přístup s dočasným containerem a tar archivem</div>
+      <pre class="code"><span class="ck">docker run</span> <span class="cv">--rm --volumes-from dbstore -v $PWD:/backup ubuntu tar cvf /backup/backup.tar /dbdata</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">Restore</div>
+      <div class="desc">Archiv lze do volume vrátit zase přes dočasný container</div>
+      <pre class="code"><span class="ck">docker run</span> <span class="cv">--rm --volumes-from dbstore -v $PWD:/backup ubuntu bash -c "cd /dbdata &amp;&amp; tar xvf /backup/backup.tar --strip 1"</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Časté chyby a limity</div>
+    <div class="entry">
+      <div class="key">Obscured files</div>
+      <div class="desc">Když mountneš host cestu přes existující data v containeru, původní obsah se překryje</div>
+    </div>
+    <div class="entry">
+      <div class="key">tmpfs není trvalé</div>
+      <div class="desc">Je ephemerální a ukládá data do host memory; není to náhrada volume</div>
+    </div>
+    <div class="entry">
+      <div class="key">Bind mount přidává coupling</div>
+      <div class="desc">Konfigurace se může rozbít při přesunu mezi stroji, OS nebo CI prostředími</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ==================== NETWORKING ==================== -->
+<div class="section" id="tab-networking">
+<div class="section-title">Networking — sítě, DNS a publikace portů</div>
+<div class="tip">
+  <strong>Základ:</strong> Containery komunikují přes Docker sítě. Interní komunikace container-container není totéž co publikace portu ven na hosta. <code>EXPOSE</code> port jen dokumentuje, zatímco <code>-p</code> nebo <code>--publish</code> ho mapuje ven.
+</div>
+<div class="grid">
+
+  <div class="card">
+    <div class="card-label">Základní mentální model</div>
+    <div class="entry">
+      <div class="key">Bridge default</div>
+      <div class="desc">Na standalone Dockeru je běžný default bridge networking</div>
+    </div>
+    <div class="entry">
+      <div class="key">User-defined bridge</div>
+      <div class="desc">Doporučený pro aplikace, protože nabízí lepší izolaci a DNS jména mezi containery</div>
+    </div>
+    <div class="entry">
+      <div class="key">Port publishing</div>
+      <div class="desc">Port se mapuje z hosta do containeru; bez publikace může být služba přístupná jen uvnitř Docker sítě</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Network drivery</div>
+    <div class="entry">
+      <div class="key">bridge</div>
+      <div class="desc">Výchozí izolovaná síť pro containery na jednom hostu</div>
+    </div>
+    <div class="entry">
+      <div class="key">host</div>
+      <div class="desc">Container sdílí network namespace hosta; neprobíhá běžné port mapping chování</div>
+      <pre class="code"><span class="ck">docker run</span> <span class="cv">--network host nginx</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">none</div>
+      <div class="desc">Container nemá žádné síťové rozhraní kromě loopbacku</div>
+      <pre class="code"><span class="ck">docker run</span> <span class="cv">--network none alpine</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">overlay</div>
+      <div class="desc">Multi-host síť určená pro Swarm služby a propojení napříč daemon instancemi</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Port publishing a EXPOSE</div>
+    <div class="entry">
+      <div class="key">EXPOSE</div>
+      <div class="desc">Metadata v image, které říká, na jakém portu aplikace poslouchá</div>
+    </div>
+    <div class="entry">
+      <div class="key">-p / --publish</div>
+      <div class="desc">Skutečně zveřejní port na hostovi</div>
+      <pre class="code"><span class="ck">docker run</span> <span class="cv">-p 8080:80 nginx</span>
+<span class="ck">docker run</span> <span class="cv">-p 127.0.0.1:8080:80 nginx</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">-P / --publish-all</div>
+      <div class="desc">Publikuje všechny exposed porty na náhodné host porty</div>
+      <pre class="code"><span class="ck">docker run</span> <span class="cv">-P nginx</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">DNS a komunikace mezi containery</div>
+    <div class="entry">
+      <div class="key">Jména na user-defined bridge</div>
+      <div class="desc">Containery ve stejné user-defined bridge síti se umí oslovit jménem nebo aliasem</div>
+    </div>
+    <div class="entry">
+      <div class="key">network connect</div>
+      <div class="desc">Běžící container lze připojit do další sítě</div>
+      <pre class="code"><span class="ck">docker network connect</span> <span class="cv">backend web</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">Container → host</div>
+      <div class="desc">Přístup na hosta je jiný problém než přístup mezi containery; nesahej po publish, pokud potřebuješ jen interní service-to-service komunikaci</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Praktické flow</div>
+    <div class="entry">
+      <div class="key">Vytvoření vlastní sítě</div>
+      <div class="desc">Dobrý základ pro více spolupracujících containerů</div>
+      <pre class="code"><span class="ck">docker network create</span> <span class="cv">appnet</span>
+<span class="ck">docker run</span> <span class="cv">-d --network appnet --name db postgres</span>
+<span class="ck">docker run</span> <span class="cv">-d --network appnet --name app myapp</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">Debug</div>
+      <div class="desc">Když port není dostupný, ověř: běží proces, je published port, správná síť a správná bind adresa aplikace uvnitř containeru</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ==================== BUILDKIT ==================== -->
+<div class="section" id="tab-buildkit">
+<div class="section-title">BuildKit — build cache, mounts a rychlejší buildy</div>
+<div class="tip">
+  <strong>Co BuildKit přináší:</strong> modernější build engine, lepší paralelizaci, přesnější cache, build secrets, SSH mounty, cache mounty a pokročilé export/import cache workflow.
+</div>
+<div class="grid">
+
+  <div class="card">
+    <div class="card-label">Základní pojmy</div>
+    <div class="entry">
+      <div class="key">BuildKit</div>
+      <div class="desc">Moderní build backend Dockeru pro efektivnější a flexibilnější image build</div>
+    </div>
+    <div class="entry">
+      <div class="key">Buildx</div>
+      <div class="desc">CLI plugin a rozhraní pro BuildKit funkce včetně multi-platform buildů a external cache</div>
+    </div>
+    <div class="entry">
+      <div class="key">Cache reuse</div>
+      <div class="desc">Při shodném kroku a vstupu může Docker znovu použít dříve vytvořenou vrstvu místo nového buildu</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Jak funguje cache</div>
+    <div class="entry">
+      <div class="key">Instrukce po instrukci</div>
+      <div class="desc">Docker kontroluje každou Dockerfile instrukci a její vstupy; pokud se liší, cache pro ten krok a všechny následující typicky neplatí</div>
+    </div>
+    <div class="entry">
+      <div class="key">COPY a build context</div>
+      <div class="desc">Změna kopírovaných souborů invaliduje příslušný krok a to, co je pod ním</div>
+    </div>
+    <div class="entry">
+      <div class="key">Pořadí je zásadní</div>
+      <div class="desc">Nejstabilnější kroky dávej nahoru, nejčastěji se měnící níž</div>
+      <pre class="code"><span class="ck">COPY</span> <span class="cv">package*.json ./</span>
+<span class="ck">RUN</span> <span class="cv">npm ci</span>
+<span class="ck">COPY</span> <span class="cv">. .</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Co cache invaliduje</div>
+    <div class="entry">
+      <div class="key">Změna instrukce</div>
+      <div class="desc">Jiný text příkazu nebo jiné flagy = jiný cache key</div>
+    </div>
+    <div class="entry">
+      <div class="key">Změna vstupních souborů</div>
+      <div class="desc">Typicky u <code>COPY</code> a <code>ADD</code></div>
+    </div>
+    <div class="entry">
+      <div class="key">Build args a env použitá v kroku</div>
+      <div class="desc">Pokud mění výsledek kroku, může se cache invalidovat</div>
+    </div>
+    <div class="entry">
+      <div class="key">Ruční vypnutí cache</div>
+      <div class="desc">Na buildu lze cache obejít</div>
+      <pre class="code"><span class="ck">docker build</span> <span class="cv">--no-cache -t myapp .</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">BuildKit mounts</div>
+    <div class="entry">
+      <div class="key">cache mount</div>
+      <div class="desc">Persistovaná build cache pro package manažery nebo kompilaci</div>
+      <pre class="code"><span class="ck">RUN</span> <span class="cv">--mount=type=cache,target=/root/.npm npm ci</span>
+<span class="ck">RUN</span> <span class="cv">--mount=type=cache,target=/var/cache/apt apt-get update</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">secret mount</div>
+      <div class="desc">Tajná data dostupná jen v konkrétním build kroku bez zapsání do finální image</div>
+      <pre class="code"><span class="ck">RUN</span> <span class="cv">--mount=type=secret,id=npmrc,target=/root/.npmrc npm ci</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">ssh mount</div>
+      <div class="desc">Použití SSH agenta nebo klíče během buildu, typicky pro privátní Git repozitáře</div>
+      <pre class="code"><span class="ck">RUN</span> <span class="cv">--mount=type=ssh git clone git@github.com:org/private.git</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">External cache a CI/CD</div>
+    <div class="entry">
+      <div class="key">cache backends</div>
+      <div class="desc">Build cache lze exportovat a znovu použít mimo lokální stroj</div>
+      <pre class="code"><span class="ck">docker buildx build</span> <span class="cv">--cache-to type=inline --cache-from type=registry,ref=myorg/myapp .</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">Multi-stage build</div>
+      <div class="desc">Neřeší jen velikost image, ale pomáhá i oddělit build kroky a cache vrstvy</div>
+    </div>
+    <div class="entry">
+      <div class="key">Multi-platform</div>
+      <div class="desc">Buildx umí buildovat varianty pro více architektur v jednom workflow</div>
+      <pre class="code"><span class="ck">docker buildx build</span> <span class="cv">--platform linux/amd64,linux/arm64 -t myapp:latest .</span></pre>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ==================== REGISTRY ==================== -->
+<div class="section" id="tab-registry">
+<div class="section-title">Registry — tagování, push/pull a distribuce image</div>
+<div class="tip">
+  <strong>Registry workflow:</strong> Image typicky buildneš lokálně nebo v CI, označíš správnou referencí a pošleš do registry přes <code>push</code>. Na jiném stroji ji stáhneš přes <code>pull</code> nebo offline přes <code>save/load</code>.
+</div>
+<div class="grid">
+
+  <div class="card">
+    <div class="card-label">Jak vypadá image reference</div>
+    <div class="entry">
+      <div class="key">Formát</div>
+      <div class="desc"><code>[registry/]namespace/repository[:tag]</code></div>
+      <pre class="code"><span class="cv">nginx:alpine</span>
+<span class="cv">ghcr.io/acme/api:1.4.2</span>
+<span class="cv">registry.example.com/team/web:prod</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">Výchozí registry</div>
+      <div class="desc">Když registry neuvedeš, Docker typicky pracuje s Docker Hubem</div>
+    </div>
+    <div class="entry">
+      <div class="key">Tag vs digest</div>
+      <div class="desc">Tag je pohyblivý ukazatel; digest je obsahově neměnná reference</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Login, tag, push, pull</div>
+    <div class="entry">
+      <div class="key">login</div>
+      <div class="desc">Uloží nebo vyžádá credentials pro registry</div>
+      <pre class="code"><span class="ck">docker login</span>
+<span class="ck">docker login</span> <span class="cv">ghcr.io</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">tag</div>
+      <div class="desc">Přidá image novou referenci bez kopírování obsahu</div>
+      <pre class="code"><span class="ck">docker tag</span> <span class="cv">myapp:1.0 registry.example.com/team/myapp:1.0</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">push</div>
+      <div class="desc">Nahraje image layers a metadata do registry</div>
+      <pre class="code"><span class="ck">docker push</span> <span class="cv">registry.example.com/team/myapp:1.0</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">pull</div>
+      <div class="desc">Stáhne image podle tagu nebo digestu</div>
+      <pre class="code"><span class="ck">docker pull</span> <span class="cv">nginx:alpine</span>
+<span class="ck">docker pull</span> <span class="cv">nginx@sha256:...</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Tagy a release flow</div>
+    <div class="entry">
+      <div class="key">latest není speciální magie</div>
+      <div class="desc">Je to jen běžný tag; jeho význam si musíš udržet procesně</div>
+    </div>
+    <div class="entry">
+      <div class="key">Verzovací tagy</div>
+      <div class="desc">Pro release workflow dává smysl držet stabilní verze typu <code>1.4.2</code>, případně paralelně i <code>1.4</code> nebo <code>stable</code></div>
+    </div>
+    <div class="entry">
+      <div class="key">Digest pinning</div>
+      <div class="desc">Do produkce je nejreprodukovatelnější odkaz přes digest</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Registries a distribuce</div>
+    <div class="entry">
+      <div class="key">Veřejné registry</div>
+      <div class="desc">Docker Hub nebo jiné cloud registry</div>
+    </div>
+    <div class="entry">
+      <div class="key">Privátní registry</div>
+      <div class="desc">Self-hosted nebo managed řešení pro interní distribuci image</div>
+    </div>
+    <div class="entry">
+      <div class="key">Offline distribuce</div>
+      <div class="desc">Když registry není k dispozici, použij <code>docker image save</code> a <code>docker image load</code></div>
+      <pre class="code"><span class="ck">docker image save</span> <span class="cv">-o myapp.tar myapp:1.0</span>
+<span class="ck">docker image load</span> <span class="cv">-i myapp.tar</span></pre>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ==================== TROUBLESHOOTING ==================== -->
+<div class="section" id="tab-troubleshooting">
+<div class="section-title">Troubleshooting — co zkontrolovat, když Docker nedělá co čekáš</div>
+<div class="tip">
+  <strong>První princip:</strong> Nehádej. Ověř stav přes <code>docker ps</code>, logy přes <code>docker logs</code>, metadata přes <code>docker inspect</code> a resource chování přes <code>docker stats</code>. Většina problémů se dá rychle zúžit na proces, síť, mount nebo build cache.
+</div>
+<div class="grid">
+
+  <div class="card">
+    <div class="card-label">Rychlý debug flow</div>
+    <table class="cmd-table">
+      <tr><td>docker ps -a</td><td>Zjisti, jestli container běží, restartuje se nebo hned skončil</td></tr>
+      <tr><td>docker logs NAME</td><td>Podívej se na stdout/stderr aplikace</td></tr>
+      <tr><td>docker inspect NAME</td><td>Ověř env, mounty, porty, IP adresy, health status</td></tr>
+      <tr><td>docker exec -it NAME sh</td><td>Podívej se dovnitř běžícího containeru</td></tr>
+      <tr><td>docker stats</td><td>Ověř resource tlak a throttling</td></tr>
+      <tr><td>docker system df</td><td>Zjisti, kdo zabírá místo</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Container hned skončí</div>
+    <div class="entry">
+      <div class="key">Zkontroluj hlavní proces</div>
+      <div class="desc">Container žije tak dlouho, jak dlouho běží jeho PID 1 proces</div>
+    </div>
+    <div class="entry">
+      <div class="key">Prohlédni logy</div>
+      <div class="desc">Chyby aplikace nebo shellu bývají nejrychlejší cesta k příčině</div>
+    </div>
+    <div class="entry">
+      <div class="key">Ověř CMD / ENTRYPOINT</div>
+      <div class="desc">Špatný příkaz, chybějící binárka nebo špatné argumenty container ukončí okamžitě</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Port není dostupný</div>
+    <div class="entry">
+      <div class="key">Je port published?</div>
+      <div class="desc">Samotné <code>EXPOSE</code> nestačí; potřebuješ <code>-p</code> nebo Compose `ports`</div>
+    </div>
+    <div class="entry">
+      <div class="key">Naslouchá proces správně?</div>
+      <div class="desc">Aplikace uvnitř containeru musí poslouchat na vhodné adrese a portu</div>
+    </div>
+    <div class="entry">
+      <div class="key">Ověř mapping</div>
+      <div class="desc">Zkontroluj port bindings v <code>docker inspect</code></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Mounty a data neodpovídají očekávání</div>
+    <div class="entry">
+      <div class="key">Bind mount překryl obsah</div>
+      <div class="desc">Host mount může skrýt soubory, které byly původně v image na stejném target path</div>
+    </div>
+    <div class="entry">
+      <div class="key">Data zmizela po smazání containeru</div>
+      <div class="desc">Byla zřejmě zapsaná jen do writable container layer, ne do volume</div>
+    </div>
+    <div class="entry">
+      <div class="key">Práva a ownership</div>
+      <div class="desc">Ověř UID/GID a read-only flagy mountu</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Build a image problémy</div>
+    <div class="entry">
+      <div class="key">Build je pomalý</div>
+      <div class="desc">Podívej se na pořadí instrukcí, `.dockerignore` a cache reuse</div>
+    </div>
+    <div class="entry">
+      <div class="key">Image je moc velká</div>
+      <div class="desc">Zkontroluj `docker history`, base image, zbytečné build artefakty a multi-stage build</div>
+    </div>
+    <div class="entry">
+      <div class="key">Cache se nechová divně</div>
+      <div class="desc">Ověř, které vstupy se mění a který krok invaliduje build cache</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Příkazy první pomoci</div>
+    <pre class="code"><span class="ck">docker ps -a</span>
+<span class="ck">docker logs</span> <span class="cv">-f CONTAINER</span>
+<span class="ck">docker inspect</span> <span class="cv">CONTAINER</span>
+<span class="ck">docker exec</span> <span class="cv">-it CONTAINER sh</span>
+<span class="ck">docker stats</span>
+<span class="ck">docker image history</span> <span class="cv">IMAGE</span>
+<span class="ck">docker system df</span>
+<span class="ck">docker network ls</span>
+<span class="ck">docker volume ls</span></pre>
+  </div>
+
+</div>
+</div>
+
+<!-- ==================== SECURITY ==================== -->
+<div class="section" id="tab-security">
+<div class="section-title">Security — základní hardening pro image a containery</div>
+<div class="tip">
+  <strong>Praktický přístup:</strong> Sniž attack surface, omez privilegia, neukládej secrets do image a ověřuj image obsah. Cílem není “absolutně bezpečný container”, ale rozumné snížení rizika.
+</div>
+<div class="grid">
+
+  <div class="card">
+    <div class="card-label">Základní principy</div>
+    <div class="entry">
+      <div class="key">Minimal base image</div>
+      <div class="desc">Menší image obvykle znamená menší attack surface a méně balíků k patchování</div>
+    </div>
+    <div class="entry">
+      <div class="key">Nepouštět vše jako root</div>
+      <div class="desc">Pokud to aplikace nepotřebuje, nastav neprivilegovaného uživatele</div>
+    </div>
+    <div class="entry">
+      <div class="key">Least privilege</div>
+      <div class="desc">Přidávej jen capability a přístup, které aplikace skutečně potřebuje</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Runtime hardening</div>
+    <div class="entry">
+      <div class="key">USER</div>
+      <div class="desc">V Dockerfile nastav běh pod konkrétním ne-root uživatelem</div>
+      <pre class="code"><span class="ck">USER</span> <span class="cv">1000:1000</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">read-only rootfs</div>
+      <div class="desc">Kde to jde, mountuj root filesystem jen pro čtení a write potřeby řeš přes tmpfs/volume</div>
+      <pre class="code"><span class="ck">docker run</span> <span class="cv">--read-only nginx</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">capabilities</div>
+      <div class="desc">Capability lze odebírat nebo přidávat podle potřeby</div>
+      <pre class="code"><span class="ck">docker run</span> <span class="cv">--cap-drop ALL --cap-add NET_BIND_SERVICE nginx</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">no-new-privileges</div>
+      <div class="desc">Zabrání procesům získat další privilegia</div>
+      <pre class="code"><span class="ck">docker run</span> <span class="cv">--security-opt no-new-privileges nginx</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Rootless a omezení daemonu</div>
+    <div class="entry">
+      <div class="key">Rootless mode</div>
+      <div class="desc">Docker Engine lze provozovat bez root práv daemonu i containerů</div>
+    </div>
+    <div class="entry">
+      <div class="key">Praktický dopad</div>
+      <div class="desc">Rootless snižuje riziko spojené s privilegovaným daemonem, ale má i specifická omezení a provozní nuance</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Secrets a image hygiene</div>
+    <div class="entry">
+      <div class="key">Secrets ne do ARG/ENV</div>
+      <div class="desc">Build args a environment mohou skončit v historii image nebo inspect výstupech</div>
+    </div>
+    <div class="entry">
+      <div class="key">Build secrets</div>
+      <div class="desc">Pro build-time tajné údaje používej BuildKit secrets</div>
+      <pre class="code"><span class="ck">RUN</span> <span class="cv">--mount=type=secret,id=npmrc,target=/root/.npmrc npm ci</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">Distroless / minimal</div>
+      <div class="desc">Kde to dává smysl, použij minimal nebo distroless runtime image a odděl build stage od runtime stage</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Vulnerability scanning</div>
+    <div class="entry">
+      <div class="key">Docker Scout</div>
+      <div class="desc">Docker nabízí image analýzu a CVE přehledy přes Docker Scout</div>
+      <pre class="code"><span class="ck">docker scout cves</span> <span class="cv">myapp:1.0</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">Co hledat</div>
+      <div class="desc">Známé zranitelnosti v base image, neaktualizované balíky a outdated dependencies</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Krátký checklist</div>
+    <table class="cmd-table">
+      <tr><td>USER</td><td>Neběží aplikace zbytečně jako root?</td></tr>
+      <tr><td>base image</td><td>Je image malá, důvěryhodná a aktualizovaná?</td></tr>
+      <tr><td>secrets</td><td>Nejsou tajné údaje zapečené do image?</td></tr>
+      <tr><td>read-only</td><td>Může být root filesystem jen pro čtení?</td></tr>
+      <tr><td>capabilities</td><td>Nejsou přidělená zbytečná privilegia?</td></tr>
+      <tr><td>scan</td><td>Proběhla kontrola CVE a base image update?</td></tr>
+    </table>
+  </div>
+
+</div>
+</div>
+
+<!-- ==================== DEPLOY ==================== -->
+<div class="section" id="tab-deploy">
+<div class="section-title">deploy — nasazení a škálování</div>
+<div class="tip">
+  <strong>Standalone Compose V2</strong> respektuje <code>resources</code> a <code>restart_policy</code>. Ostatní volby (replicas, update_config, placement) vyžadují Docker Swarm nebo přepínač <code>--compatibility</code>.
+</div>
+<div class="grid">
+
+  <div class="card">
+    <div class="card-label">Repliky a mód</div>
+    <div class="entry">
+      <div class="key">replicas:</div>
+      <div class="desc">Počet instancí služby</div>
+      <pre class="code"><span class="ck">deploy</span>:
+  <span class="ck">replicas</span>: <span class="cn">3</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">mode:</div>
+      <div class="desc">Typ nasazení</div>
+      <pre class="code"><span class="ck">mode</span>: <span class="cv">replicated</span>  <span class="cc"># výchozí – N instancí</span>
+<span class="ck">mode</span>: <span class="cv">global</span>      <span class="cc"># 1 na každém Swarm uzlu</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Rolling update</div>
+    <div class="entry">
+      <div class="key">update_config:</div>
+      <div class="desc">Konfigurace postupné aktualizace</div>
+      <pre class="code"><span class="ck">update_config</span>:
+  <span class="ck">parallelism</span>: <span class="cn">2</span>           <span class="cc"># aktualizovat po 2</span>
+  <span class="ck">delay</span>: <span class="cv">10s</span>               <span class="cc"># pauza mezi dávkami</span>
+  <span class="ck">order</span>: <span class="cv">start-first</span>       <span class="cc"># nebo stop-first</span>
+  <span class="ck">failure_action</span>: <span class="cv">rollback</span> <span class="cc"># nebo pause/continue</span>
+  <span class="ck">max_failure_ratio</span>: <span class="cn">0.1</span>
+  <span class="ck">monitor</span>: <span class="cv">60s</span>             <span class="cc"># čas sledování po update</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">rollback_config:</div>
+      <div class="desc">Konfigurace automatického rollbacku</div>
+      <pre class="code"><span class="ck">rollback_config</span>:
+  <span class="ck">parallelism</span>: <span class="cn">1</span>
+  <span class="ck">delay</span>: <span class="cv">5s</span>
+  <span class="ck">failure_action</span>: <span class="cv">pause</span>
+  <span class="ck">order</span>: <span class="cv">stop-first</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Zdroje (CPU, paměť, GPU)</div>
+    <div class="entry">
+      <div class="key">resources:</div>
+      <div class="desc">Limity a rezervace zdrojů</div>
+      <pre class="code"><span class="ck">resources</span>:
+  <span class="ck">limits</span>:
+    <span class="ck">cpus</span>: <span class="cv">"0.50"</span>
+    <span class="ck">memory</span>: <span class="cv">512M</span>
+    <span class="ck">pids</span>: <span class="cn">100</span>
+  <span class="ck">reservations</span>:
+    <span class="ck">cpus</span>: <span class="cv">"0.25"</span>
+    <span class="ck">memory</span>: <span class="cv">128M</span>
+    <span class="ck">devices</span>:                <span class="cc"># GPU</span>
+      - <span class="ck">capabilities</span>: [<span class="cv">gpu</span>]
+        <span class="ck">count</span>: <span class="cn">1</span>
+        <span class="ck">driver</span>: <span class="cv">nvidia</span></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Restart policy a placement</div>
+    <div class="entry">
+      <div class="key">restart_policy:</div>
+      <div class="desc">Detailní politika restartu (přesnější než restart:)</div>
+      <pre class="code"><span class="ck">restart_policy</span>:
+  <span class="ck">condition</span>: <span class="cv">on-failure</span>  <span class="cc"># any/none/on-failure</span>
+  <span class="ck">delay</span>: <span class="cv">5s</span>
+  <span class="ck">max_attempts</span>: <span class="cn">3</span>
+  <span class="ck">window</span>: <span class="cv">120s</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">placement:</div>
+      <div class="desc">Kde spustit repliky (Swarm — omezení uzlů)</div>
+      <pre class="code"><span class="ck">placement</span>:
+  <span class="ck">constraints</span>:
+    - <span class="cv">node.role == manager</span>
+    - <span class="cv">node.labels.region == eu-west</span>
+    - <span class="cv">engine.labels.os == linux</span>
+  <span class="ck">preferences</span>:
+    - <span class="ck">spread</span>: <span class="cv">node.labels.zone</span>
+  <span class="ck">max_replicas_per_node</span>: <span class="cn">2</span></pre>
+    </div>
+    <div class="entry">
+      <div class="key">endpoint_mode: / labels:</div>
+      <div class="desc">Způsob publikace portů a Swarm service labely</div>
+      <pre class="code"><span class="ck">endpoint_mode</span>: <span class="cv">vip</span>     <span class="cc"># virtual IP (výchozí)</span>
+<span class="ck">endpoint_mode</span>: <span class="cv">dnsrr</span>   <span class="cc"># DNS round-robin</span>
+<span class="ck">labels</span>:
+  <span class="ck">traefik.enable</span>: <span class="cv">"true"</span></pre>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ==================== CLI ==================== -->
+<div class="section" id="tab-cli">
+<div class="section-title">CLI příkazy — docker compose</div>
+<div class="grid wide">
+
+  <div class="card">
+    <div class="card-label">Spouštění a zastavování</div>
+    <table class="cmd-table">
+      <tr><td>docker compose up</td><td>Spustit všechny služby</td></tr>
+      <tr><td>docker compose up -d</td><td>Na pozadí (detached mode)</td></tr>
+      <tr><td>docker compose up --build</td><td>Rebuild před spuštěním</td></tr>
+      <tr><td>docker compose up --force-recreate</td><td>Znovu vytvořit kontejnery</td></tr>
+      <tr><td>docker compose up --no-deps web</td><td>Spustit jen web, ne závislosti</td></tr>
+      <tr><td>docker compose up --scale web=3</td><td>Spustit 3 instance webové služby</td></tr>
+      <tr><td>docker compose down</td><td>Zastavit a smazat kontejnery + sítě</td></tr>
+      <tr><td>docker compose down -v</td><td>+ smazat pojmenované svazky</td></tr>
+      <tr><td>docker compose down --rmi all</td><td>+ smazat všechny použité obrazy</td></tr>
+      <tr><td>docker compose down --remove-orphans</td><td>Smazat osiřelé kontejnery</td></tr>
+      <tr><td>docker compose start</td><td>Spustit zastavené kontejnery</td></tr>
+      <tr><td>docker compose stop</td><td>Zastavit bez smazání</td></tr>
+      <tr><td>docker compose stop -t 30</td><td>Zastavit s 30s grace periodem</td></tr>
+      <tr><td>docker compose restart</td><td>Restartovat všechny služby</td></tr>
+      <tr><td>docker compose pause</td><td>Pozastavit kontejnery (SIGSTOP)</td></tr>
+      <tr><td>docker compose unpause</td><td>Obnovit pozastavené kontejnery</td></tr>
+      <tr><td>docker compose kill</td><td>Ukončit SIGKILL</td></tr>
+      <tr><td>docker compose kill -s SIGTERM</td><td>Poslat vlastní signál</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Build a registry</div>
+    <table class="cmd-table">
+      <tr><td>docker compose build</td><td>Sestavit všechny obrazy</td></tr>
+      <tr><td>docker compose build web</td><td>Sestavit jen danou službu</td></tr>
+      <tr><td>docker compose build --no-cache</td><td>Bez použití cache</td></tr>
+      <tr><td>docker compose build --parallel</td><td>Paralelní build více služeb</td></tr>
+      <tr><td>docker compose build --push</td><td>Build a okamžitý push do registru</td></tr>
+      <tr><td>docker compose pull</td><td>Stáhnout všechny obrazy z registru</td></tr>
+      <tr><td>docker compose pull --ignore-pull-failures</td><td>Pokračovat při chybě pull</td></tr>
+      <tr><td>docker compose push</td><td>Push sestavených obrazů do registru</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Monitoring a logy</div>
+    <table class="cmd-table">
+      <tr><td>docker compose ps</td><td>Stav a porty kontejnerů</td></tr>
+      <tr><td>docker compose ps -a</td><td>Včetně zastavených kontejnerů</td></tr>
+      <tr><td>docker compose ps --format json</td><td>Výstup jako JSON</td></tr>
+      <tr><td>docker compose logs</td><td>Výpis logů všech služeb</td></tr>
+      <tr><td>docker compose logs -f web</td><td>Sledovat logy služby web (follow)</td></tr>
+      <tr><td>docker compose logs --tail=100</td><td>Posledních 100 řádků</td></tr>
+      <tr><td>docker compose logs --since=1h</td><td>Logy za poslední hodinu</td></tr>
+      <tr><td>docker compose top</td><td>Procesy běžící v kontejnerech</td></tr>
+      <tr><td>docker compose stats</td><td>Živé využití CPU/RAM</td></tr>
+      <tr><td>docker compose port web 80</td><td>Zjistit mapovaný port na hostu</td></tr>
+      <tr><td>docker compose events</td><td>Live stream Docker událostí</td></tr>
+      <tr><td>docker compose images</td><td>Použité obrazy a jejich velikosti</td></tr>
+      <tr><td>docker compose wait web db</td><td>Čekat na ukončení služeb</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Spouštění příkazů v kontejnerech</div>
+    <table class="cmd-table">
+      <tr><td>docker compose exec web bash</td><td>Shell v běžícím kontejneru</td></tr>
+      <tr><td>docker compose exec -u root web sh</td><td>Jako root</td></tr>
+      <tr><td>docker compose exec -e VAR=val web sh</td><td>S extra proměnnou</td></tr>
+      <tr><td>docker compose exec -w /tmp web sh</td><td>V daném pracovním adresáři</td></tr>
+      <tr><td>docker compose exec --index=2 web sh</td><td>Konkrétní instance (scale)</td></tr>
+      <tr><td>docker compose run web npm test</td><td>Nový kontejner + příkaz</td></tr>
+      <tr><td>docker compose run --rm web sh</td><td>Smazat kontejner po skončení</td></tr>
+      <tr><td>docker compose run --no-deps web</td><td>Bez spouštění závislostí</td></tr>
+      <tr><td>docker compose run -p 3001:3000 web</td><td>S mapováním portu</td></tr>
+      <tr><td>docker compose cp web:/app/log .</td><td>Kopírovat soubor z kontejneru</td></tr>
+      <tr><td>docker compose cp ./file web:/app/</td><td>Kopírovat soubor do kontejneru</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Konfigurace, validace a projekty</div>
+    <table class="cmd-table">
+      <tr><td>docker compose config</td><td>Zobrazit vyhodnocenou konfiguraci</td></tr>
+      <tr><td>docker compose config --quiet</td><td>Jen validace (exit code 0 = OK)</td></tr>
+      <tr><td>docker compose config --services</td><td>Vypsat seznam služeb</td></tr>
+      <tr><td>docker compose config --volumes</td><td>Vypsat seznam svazků</td></tr>
+      <tr><td>docker compose config --profiles</td><td>Vypsat dostupné profily</td></tr>
+      <tr><td>docker compose -f prod.yml up</td><td>Použít vlastní compose soubor</td></tr>
+      <tr><td>docker compose -f a.yml -f b.yml up</td><td>Sloučit více compose souborů</td></tr>
+      <tr><td>docker compose --profile debug up</td><td>Aktivovat pojmenovaný profil</td></tr>
+      <tr><td>docker compose -p myproject up</td><td>Nastavit název projektu</td></tr>
+      <tr><td>docker compose --env-file .env.prod up</td><td>Použít vlastní .env soubor</td></tr>
+      <tr><td>docker compose ls</td><td>Vypsat běžící Compose projekty</td></tr>
+      <tr><td>docker compose version</td><td>Zobrazit verzi Docker Compose</td></tr>
+      <tr><td>docker compose rm</td><td>Smazat zastavené kontejnery</td></tr>
+      <tr><td>docker compose alpha watch</td><td>Live reload při změně souborů</td></tr>
+    </table>
+  </div>
+
+</div>
+</div>
+
+<!-- ==================== EXAMPLE ==================== -->
+<div class="section" id="tab-example">
+<div class="section-title">Kompletní produkční příklad</div>
+<div class="tip">
+  <strong>Stack:</strong> Nginx jako reverse proxy → Node.js aplikace (2 repliky) → PostgreSQL s healthcheckem → Redis cache. Síť <code>backend</code> je interní (bez přístupu k internetu).
+</div>
+<div class="card col-full">
+  <div class="card-label">docker-compose.yml</div>
+  <pre class="code"><span class="ck">services</span>:
+
+  <span class="ck">nginx</span>:
+    <span class="ck">image</span>: <span class="cv">nginx:1.25-alpine</span>
+    <span class="ck">ports</span>:
+      - <span class="cv">"80:80"</span>
+      - <span class="cv">"443:443"</span>
+    <span class="ck">volumes</span>:
+      - <span class="cv">./nginx.conf:/etc/nginx/nginx.conf:ro</span>
+      - <span class="cv">certs:/etc/ssl/certs:ro</span>
+    <span class="ck">networks</span>:
+      - <span class="cv">frontend</span>
+    <span class="ck">depends_on</span>:
+      <span class="ck">app</span>:
+        <span class="ck">condition</span>: <span class="cv">service_healthy</span>
+    <span class="ck">restart</span>: <span class="cv">unless-stopped</span>
+
+  <span class="ck">app</span>:
+    <span class="ck">build</span>:
+      <span class="ck">context</span>: <span class="cv">./app</span>
+      <span class="ck">dockerfile</span>: <span class="cv">Dockerfile</span>
+      <span class="ck">target</span>: <span class="cv">production</span>
+      <span class="ck">args</span>:
+        - <span class="cv">NODE_VERSION=20</span>
+    <span class="ck">environment</span>:
+      - <span class="cv">NODE_ENV=production</span>
+      - <span class="cv">DB_HOST=db</span>
+      - <span class="cv">DB_PORT=5432</span>
+      - <span class="cv">DB_NAME=${POSTGRES_DB}</span>
+      - <span class="cv">REDIS_URL=redis://cache:6379</span>
+    <span class="ck">env_file</span>:
+      - <span class="cv">.env</span>
+    <span class="ck">networks</span>:
+      - <span class="cv">frontend</span>
+      - <span class="cv">backend</span>
+    <span class="ck">depends_on</span>:
+      <span class="ck">db</span>:
+        <span class="ck">condition</span>: <span class="cv">service_healthy</span>
+      <span class="ck">cache</span>:
+        <span class="ck">condition</span>: <span class="cv">service_started</span>
+    <span class="ck">healthcheck</span>:
+      <span class="ck">test</span>: [<span class="cv">"CMD"</span>, <span class="cv">"curl"</span>, <span class="cv">"-f"</span>, <span class="cv">"http://localhost:3000/health"</span>]
+      <span class="ck">interval</span>: <span class="cv">30s</span>
+      <span class="ck">timeout</span>: <span class="cv">10s</span>
+      <span class="ck">retries</span>: <span class="cn">3</span>
+      <span class="ck">start_period</span>: <span class="cv">30s</span>
+    <span class="ck">deploy</span>:
+      <span class="ck">replicas</span>: <span class="cn">2</span>
+      <span class="ck">resources</span>:
+        <span class="ck">limits</span>:
+          <span class="ck">cpus</span>: <span class="cv">"1.0"</span>
+          <span class="ck">memory</span>: <span class="cv">512M</span>
+      <span class="ck">restart_policy</span>:
+        <span class="ck">condition</span>: <span class="cv">on-failure</span>
+        <span class="ck">max_attempts</span>: <span class="cn">3</span>
+    <span class="ck">restart</span>: <span class="cv">unless-stopped</span>
+    <span class="ck">init</span>: <span class="cn">true</span>
+    <span class="ck">read_only</span>: <span class="cn">true</span>
+    <span class="ck">tmpfs</span>:
+      - <span class="cv">/tmp</span>
+    <span class="ck">logging</span>:
+      <span class="ck">driver</span>: <span class="cv">json-file</span>
+      <span class="ck">options</span>:
+        <span class="ck">max-size</span>: <span class="cv">"10m"</span>
+        <span class="ck">max-file</span>: <span class="cv">"3"</span>
+
+  <span class="ck">db</span>:
+    <span class="ck">image</span>: <span class="cv">postgres:16-alpine</span>
+    <span class="ck">environment</span>:
+      <span class="ck">POSTGRES_DB</span>: <span class="cv">${POSTGRES_DB}</span>
+      <span class="ck">POSTGRES_USER</span>: <span class="cv">${POSTGRES_USER}</span>
+      <span class="ck">POSTGRES_PASSWORD</span>: <span class="cv">${POSTGRES_PASSWORD}</span>
+    <span class="ck">volumes</span>:
+      - <span class="cv">pgdata:/var/lib/postgresql/data</span>
+      - <span class="cv">./init.sql:/docker-entrypoint-initdb.d/init.sql:ro</span>
+    <span class="ck">networks</span>:
+      - <span class="cv">backend</span>
+    <span class="ck">healthcheck</span>:
+      <span class="ck">test</span>: [<span class="cv">"CMD-SHELL"</span>, <span class="cv">"pg_isready -U ${POSTGRES_USER}"</span>]
+      <span class="ck">interval</span>: <span class="cv">10s</span>
+      <span class="ck">timeout</span>: <span class="cv">5s</span>
+      <span class="ck">retries</span>: <span class="cn">5</span>
+    <span class="ck">restart</span>: <span class="cv">unless-stopped</span>
+
+  <span class="ck">cache</span>:
+    <span class="ck">image</span>: <span class="cv">redis:7-alpine</span>
+    <span class="ck">command</span>: <span class="cv">redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru</span>
+    <span class="ck">volumes</span>:
+      - <span class="cv">redisdata:/data</span>
+    <span class="ck">networks</span>:
+      - <span class="cv">backend</span>
+    <span class="ck">restart</span>: <span class="cv">unless-stopped</span>
+
+<span class="ck">networks</span>:
+  <span class="ck">frontend</span>:
+    <span class="ck">driver</span>: <span class="cv">bridge</span>
+  <span class="ck">backend</span>:
+    <span class="ck">driver</span>: <span class="cv">bridge</span>
+    <span class="ck">internal</span>: <span class="cn">true</span>          <span class="cc"># bez přístupu k internetu</span>
+
+<span class="ck">volumes</span>:
+  <span class="ck">pgdata</span>:
+    <span class="ck">driver</span>: <span class="cv">local</span>
+    <span class="ck">labels</span>:
+      <span class="ck">backup</span>: <span class="cv">daily</span>
+  <span class="ck">redisdata</span>:
+  <span class="ck">certs</span>:
+    <span class="ck">external</span>: <span class="cn">true</span>           <span class="cc"># musí existovat před spuštěním</span></pre>
+</div>
+</div>
+
+</main>
+
+<script>
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>
