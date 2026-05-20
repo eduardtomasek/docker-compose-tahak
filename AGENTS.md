@@ -1,7 +1,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **docker-tahák** (1 symbols, 0 relationships, 0 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **docker-compose-tahak** (100 symbols, 93 relationships, 0 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -24,10 +24,10 @@ This project is indexed by GitNexus as **docker-tahák** (1 symbols, 0 relation
 
 | Resource | Use for |
 |----------|---------|
-| `gitnexus://repo/docker-tahák/context` | Codebase overview, check index freshness |
-| `gitnexus://repo/docker-tahák/clusters` | All functional areas |
-| `gitnexus://repo/docker-tahák/processes` | All execution flows |
-| `gitnexus://repo/docker-tahák/process/{name}` | Step-by-step execution trace |
+| `gitnexus://repo/docker-compose-tahak/context` | Codebase overview, check index freshness |
+| `gitnexus://repo/docker-compose-tahak/clusters` | All functional areas |
+| `gitnexus://repo/docker-compose-tahak/processes` | All execution flows |
+| `gitnexus://repo/docker-compose-tahak/process/{name}` | Step-by-step execution trace |
 
 ## CLI
 
